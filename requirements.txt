@@ -1,0 +1,6 @@
+rdflib~=6.0.2
+numpy~=1.19.3
+pandas
+
+requests~=2.25.0
+setuptools~=57.4.0
