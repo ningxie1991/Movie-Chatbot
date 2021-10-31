@@ -1,4 +1,4 @@
-from chatbot.algorithm.movies_ner import MoviesNER
+from chatbot.algorithm.model.movies_ner import MoviesNER
 
 ner = MoviesNER()
 ner.fit()

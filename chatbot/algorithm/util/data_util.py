@@ -11,11 +11,7 @@ tagger = SequenceTagger.load("flair/pos-english")
 
 
 def sentence2tokens(sentence_text):
-    if sentence_text[-1] == '?' or sentence_text[-1] == '.':
-        sentence_array = sentence_text[:-1].split(' ')
-    else:
-        sentence_array = sentence_text.split(' ')
-    return sentence_array
+    return re.findall(r"[\w']+", sentence_text)
 
 
 def sentence2input(sentence_text):

@@ -8,9 +8,11 @@ from chatbot.algorithm.util.ner_util import collate, sent2features, sent2labels
 
 
 class MoviesNER:
-    def __init__(self):
-        self.df_train = pd.read_csv('../../data/mit_movies_corpus/engtrain_cased.csv')
-        self.df_test = pd.read_csv('../../data/mit_movies_corpus/engtest_cased.csv')
+    def __init__(self, train_data_dir, test_data_dir):
+        # train_data_dir = /data/mit_movies/corpus/engtrain_cased.csv
+        # test_data_dir = /data/mit_movies/corpus/engtest_cased.csv
+        self.df_train = pd.read_csv(train_data_dir)
+        self.df_test = pd.read_csv(test_data_dir)
         self.crf = sklearn_crfsuite.CRF(
             algorithm='l2sgd',  # l2sgd: Stochastic Gradient Descent with L2 regularization term
             max_iterations=1000,  # maximum number of iterations

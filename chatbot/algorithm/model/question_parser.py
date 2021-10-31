@@ -11,10 +11,13 @@ from nltk.chunk import conlltags2tree
 
 
 class QuestionParser:
-    def __init__(self, model_file_path):
+    def __init__(self, model_dir):
+        # model_dir = /chatbot/algorithm/saved_models/Movies_NER.sav
         dir_name = os.path.dirname(__file__)
-        file_name = os.path.join(dir_name, model_file_path)
+        file_name = os.path.join(dir_name, model_dir)
         self.loaded_model = joblib.load(file_name)
+        self.noun_pos = ['NN', 'NNP', 'NNPS', 'NNS']
+        self.verb_pos = ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
         self.sentence = ''
         self.tokens = []
         self.tags = []
@@ -43,3 +46,17 @@ class QuestionParser:
                 original_string = " ".join([token for token, pos in subtree.leaves()])
                 original_text.append((original_string, original_label))
         return original_text
+
+    def get_nouns(self):
+        nouns = []
+        for index, item in enumerate(self.pos):
+            if item in self.noun_pos and self.tags[index] == 'O':
+                nouns.append(self.tokens[index])
+        return nouns
+
+    def get_verbs(self):
+        verbs = []
+        for index, item in enumerate(self.pos):
+            if item in self.verb_pos:
+                verbs.append(self.tokens[index])
+        return verbs
