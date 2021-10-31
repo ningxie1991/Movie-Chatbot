@@ -1,6 +1,11 @@
-from rdflib.namespace import Namespace, RDF, RDFS, XSD
 import rdflib
-import numpy as np
 
-entity_emb = np.load('../../data/entity_embeds.npy')
-relation_emb = np.load('../../data/relation_embeds.npy')
+
+class Dataset:
+    def __init__(self, graph_dir):
+        self.graph = rdflib.Graph()
+        self.graph.parse(graph_dir, format='turtle')
+
+    def get_graph(self):
+        return self.graph
+
