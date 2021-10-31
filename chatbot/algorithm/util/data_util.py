@@ -73,7 +73,7 @@ def read_data(corpus_file):
         return pd.DataFrame(data, columns=['Sentence #', 'Word', 'POS', 'Tag'])
 
 
-def elaborate_property_labels(graph_properties, wikidata_properties):
+def expand_property_labels(graph_properties, wikidata_properties):
     data = []
     for row in graph_properties:
         property_uri = row.p

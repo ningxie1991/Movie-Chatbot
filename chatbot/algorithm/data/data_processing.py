@@ -1,6 +1,6 @@
 import pandas as pd
 from chatbot.algorithm.data.dataset import Dataset
-from chatbot.algorithm.util.data_util import read_data, elaborate_property_labels
+from chatbot.algorithm.util.data_util import read_data, expand_property_labels
 
 
 def process_mit_movies_data():
@@ -29,5 +29,5 @@ def map_wikidata_properties():
 
     # pre-saved all the properties and their labels from wikidata
     wikidata_properties = pd.read_csv('../../../data/wikidata/properties.csv')
-    df = elaborate_property_labels(graph_properties, wikidata_properties)
+    df = expand_property_labels(graph_properties, wikidata_properties)
     df.to_csv("../../data/wikidata/graph_properties_expanded.csv", index=False)
