@@ -1,5 +1,3 @@
-import json
-
 import pandas as pd
 import numpy as np
 import re
@@ -7,6 +5,8 @@ from flair.data import Sentence
 from flair.models import SequenceTagger
 
 # load tagger
+from rdflib import Namespace
+
 tagger = SequenceTagger.load("flair/pos-english")
 
 
@@ -92,3 +92,12 @@ def expand_property_labels(graph_properties, wikidata_properties):
                 data.append([property_uri, label])
 
     return pd.DataFrame(data, columns=['Property', 'PropertyLabel'])
+
+
+def get_entities_with_labels(graph):
+    RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
+    with_label = set(graph.subjects(RDFS.label, None))
+    entities = []
+    for node in with_label:
+        entities.append((node.toPython(), graph.value(node, RDFS.label).toPython()))
+    return pd.DataFrame(entities, columns=['Entity', 'Label'])

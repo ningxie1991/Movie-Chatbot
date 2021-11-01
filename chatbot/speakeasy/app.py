@@ -18,7 +18,8 @@ class App:
         self.username = credentials["agent"]["username"]
         self.password = credentials["agent"]["password"]
         self.agent_details = None
-        self.graph = Dataset('../../data/14_graph.nt')
+        dataset = Dataset('../../data/14_graph.nt')
+        self.graph = dataset.get_graph()
         self.question_parser = QuestionParser('../algorithm/saved_models/Movies_NER.sav')
         self.entity_matcher = EntityMatcher(self.graph)
         self.predicate_matcher = PredicateMatcher('../../data/wikidata/graph_properties_expanded.csv')
