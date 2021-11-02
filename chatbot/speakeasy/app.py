@@ -18,11 +18,11 @@ class App:
         self.username = credentials["agent"]["username"]
         self.password = credentials["agent"]["password"]
         self.agent_details = None
-        dataset = Dataset('../../data/14_graph.nt')
+        dataset = Dataset()
         self.graph = dataset.get_graph()
-        self.question_parser = QuestionParser('../algorithm/saved_models/Movies_NER.sav')
-        self.entity_matcher = EntityMatcher(self.graph)
-        self.predicate_matcher = PredicateMatcher('../../data/wikidata/graph_properties_expanded.csv')
+        self.question_parser = QuestionParser()
+        self.predicate_matcher = PredicateMatcher()
+        # self.entity_matcher = EntityMatcher(self.graph)
 
     # user login
     def login(self):
@@ -94,10 +94,10 @@ class App:
         entities = self.question_parser.get_entities(question)
 
         # 2. get the non-entity nouns in the question
-        nouns = self.question_parser.get_nouns()
+        nouns = self.question_parser.get_nouns(question, entities)
 
         # 3. get the verbs in the question
-        verbs = self.question_parser.get_verbs()
+        verbs = self.question_parser.get_verbs(question)
 
         # 4. find question pattern using nouns and verbs and determine the relation
         # 5. match the relation with predicate

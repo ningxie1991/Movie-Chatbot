@@ -13,7 +13,7 @@ movie_query = '''
         }
         '''
 
-dataset = Dataset('../../data/14_graph.nt')
+dataset = Dataset()
 graph = dataset.get_graph()
 entity_matcher = EntityMatcher(graph, movie_query)
 entity = 'Batman'

@@ -1,5 +1,10 @@
-from chatbot.algorithm.util.data_util import sentence2input, sentence2tokens
+import re
 
-result = sentence2tokens("I am a big fan of Steven Spielberg, could you recommend some of his action movies?")
-print(result)
+from nltk import word_tokenize
+from chatbot.algorithm.util.data_util import pos_tag
+
+sentence = "Show me an action movie poster."
+tokens = word_tokenize(re.sub('[,;.\?]', '', sentence))
+sentence_with_pos = pos_tag(tokens)
+print(sentence_with_pos)
 

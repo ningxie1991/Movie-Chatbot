@@ -1,35 +1,21 @@
 import pandas as pd
 import numpy as np
 import re
+from rdflib import Namespace
 from flair.data import Sentence
 from flair.models import SequenceTagger
 
 # load tagger
-from rdflib import Namespace
-
 tagger = SequenceTagger.load("flair/pos-english")
 
 
-def sentence2tokens(sentence_text):
-    return re.findall(r"[\w']+", sentence_text)
-
-
-def sentence2input(sentence_text):
-    sentence = Sentence(sentence_text)
-    # predict POS tags
-    tagger.predict(sentence)
-    sentence_array = sentence2tokens(sentence_text)
-    tag_array = tag_pos(sentence_array)
-    return list(zip(sentence_array, tag_array))
-
-
-def tag_pos(sentence_array):
-    s = ' '.join(sentence_array)
+def pos_tag(tokens):
+    s = ' '.join(tokens)
     sentence = Sentence(s)
     # predict POS tags
     tagger.predict(sentence)
-    spans = sentence.get_spans('pos')
-    return [span.tag for span in spans]
+    pos_tags = [span.tag for span in sentence.get_spans('pos')]
+    return list(zip(tokens, pos_tags))
 
 
 def read_data(corpus_file):
@@ -49,7 +35,7 @@ def read_data(corpus_file):
                 words[0] = words[0].title()
                 w = np.array(words).reshape((-1, 1))
 
-                pos_tags = tag_pos(words)
+                pos_tags = [pos for token, pos in pos_tag(words)]
                 p = np.array(pos_tags).reshape((-1, 1))
                 t = np.array(tags).reshape((-1, 1))
                 chunk = np.hstack((s, w, p, t))
@@ -80,8 +66,10 @@ def expand_property_labels(graph_properties, wikidata_properties):
         print(property_uri)
         if property_uri.startswith('http://www.wikidata.org/prop/direct/'):
             entity_uri = re.sub("http://www.wikidata.org/prop/direct/", "http://www.wikidata.org/entity/", property_uri)
-            property_label = wikidata_properties.loc[wikidata_properties['property'] == entity_uri, 'propertyLabel'].values[0]
-            property_alt_label = wikidata_properties.loc[wikidata_properties['property'] == entity_uri, 'propertyAltLabel'].values[0]
+            property_label = \
+            wikidata_properties.loc[wikidata_properties['property'] == entity_uri, 'propertyLabel'].values[0]
+            property_alt_label = \
+            wikidata_properties.loc[wikidata_properties['property'] == entity_uri, 'propertyAltLabel'].values[0]
 
             all_labels_text = property_label + ', '
             if property_alt_label:

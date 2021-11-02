@@ -1,6 +1,8 @@
+from chatbot.algorithm.model.query_matcher import QueryMatcher
 from chatbot.algorithm.model.question_parser import QuestionParser
 
 question_parser = QuestionParser()
+query_matcher = QueryMatcher()
 
 sentences = ['Who is the director of the Batman movie?',
              'What is the name of the lead actor in the movie Catch Me If You Can?',
@@ -12,12 +14,6 @@ sentences = ['Who is the director of the Batman movie?',
              'What movies star Robert Downey Jr?',
              'Which actor plays Tony Stark in Iron Man?',
              'What movies are directed by Tim Burton?']
-             # 'Did Christopher Nolan ever work on a Batman movie?',
-             # 'I like the Jurassic Park movie; can you recommend any similar movies?',
-             # 'I am a big fan of Steven Spielberg, could you recommend some of his action movies?',
-             # 'Show me the pictures of the lead actors of the movie Jurassic Park.',
-             # 'Can you show me the poster of the movie Batman?',
-             # 'Show me an action movie poster.']
 
 for sentence in sentences:
 
@@ -26,19 +22,10 @@ for sentence in sentences:
     entities = question_parser.get_entities(sentence)
     print(entities)
 
-    nouns = question_parser.get_nouns(sentence, entities)
-    print("\n-- Other nouns: \n")
-    print(nouns)
-
-    # for n in nouns:
-    #     top_match = predicate_matcher.top_match(n)
-    #     print("\n-- top match: {}\n".format(top_match))
-
-    verbs = question_parser.get_verbs(sentence)
-    print("\n-- All verbs: \n")
-    print(verbs)
-
     bos = question_parser.get_bos(sentence)
     print("\n-- BOS: \n")
     print(bos)
 
+    query = query_matcher.match(sentence, entities, bos)
+    print("\n-- Matched query: \n")
+    print(query)

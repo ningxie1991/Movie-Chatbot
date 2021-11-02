@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer
@@ -5,14 +7,14 @@ from sklearn.metrics import pairwise_distances
 
 
 class PredicateMatcher:
-    def __init__(self, properties_dir, embeds_dir):
+    def __init__(self):
         self.model = SentenceTransformer('sentence-transformers/paraphrase-xlm-r-multilingual-v1')
-        # properties_dir = /data/wikidata/graph_properties_expanded.csv
-        # embeds_dir = /data/wikidata/property_embeds.npy
-        self.properties = pd.read_csv(properties_dir)
+        # properties_dir = ../../../data/wikidata/graph_properties_expanded.csv
+        # embeds_dir = ../../..//data/wikidata/property_embeds.npy
+        dirname = os.path.dirname(__file__)
+        self.properties = pd.read_csv(os.path.join(dirname, '../../../data/wikidata/graph_properties_expanded.csv'))
         self.property_labels = self.properties['PropertyLabel']
-        self.property_embeds = np.load(embeds_dir)
-        print(self.property_embeds.shape)
+        self.property_embeds = np.load(os.path.join(dirname, '../../../data/wikidata/property_embeds.npy'))
 
     def top_match(self, relation):
         relation_embed = self.model.encode(relation)
@@ -28,5 +30,4 @@ class PredicateMatcher:
             )
             for rank, idx in enumerate(most_likely[:3])],
             columns=('Entity', 'Label', 'Score', 'Rank'))
-        print(top_match)
-        return top_match['Entity'].iloc[0]
+        return top_match['Label'].iloc[0]

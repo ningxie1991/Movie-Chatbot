@@ -1,3 +1,9 @@
+from chatbot.speakeasy.app import App
+
+app = App()
+app.find_answer('Who is the director of the Batman movie?')
+
+
 # query_template = '''
 #         PREFIX ddis: <http://ddis.ch/atai/>
 #         PREFIX wd: <http://www.wikidata.org/entity/>

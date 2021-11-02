@@ -2,13 +2,12 @@ import editdistance
 
 
 class EntityMatcher:
-    def __init__(self, graph, query):
+    def __init__(self, graph):
         self.graph = graph
-        self.query = query
 
-    def top_match(self, entity):
+    def top_match(self, entity, query):
         nodes = {}
-        for row in self.graph.query(self.query):
+        for row in self.graph.query(query):
             nodes[row['key'].toPython()] = row['lbl'].toPython()
 
         tmp = 9999
