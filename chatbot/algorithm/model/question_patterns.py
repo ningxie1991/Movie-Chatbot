@@ -7,17 +7,6 @@
 # Where is [the film location] of the [Iron Man] movie?
 # Who is the actor for Tony Stark?
 # Which character did Robert Downy Jr play in the Avengers movie?
-wh_pattern = "(?:Who |What |Which |Where )(?:is |are |was |were )(.*)(?: in| of| from| for)(?: the)?(?: movie)? {}(?: movie)?(?:\?)"
+wh_pattern = "(?:Who |What |Which |Where )(?:is |are |was |were )(.*)(?: in| of| from| for)(?: the)?(?: movie)?(?: character)? {}(?: movie)?(?:\?)"
 
-
-# title = entities.loc[entities["Tag"] == 'TITLE', 'Entity'].values[0]
-# director = entities.loc[entities["Tag"] == 'DIRECTOR', 'Entity'].values[0]
-# actor = entities.loc[entities["Tag"] == 'ACTOR', 'Entity'].values[0]
-# character = entities.loc[entities["Tag"] == 'CHARACTER', 'Entity'].values[0]
-# relation = ""
-# if bos['POS'].iloc[0] in self.wh_pos:
-#     if title:
-#         pattern = wh_pattern.format(title)
-#     elif character:
-#         pattern = wh_pattern.format(character)
-#     relation = re.match(pattern, sentence).group(1)
+main_actor_character_pattern = 'main actor|lead actor|main character|lead character'

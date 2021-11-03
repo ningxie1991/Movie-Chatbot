@@ -5,6 +5,7 @@ import time
 from chatbot.algorithm.data.dataset import Dataset
 from chatbot.algorithm.model.entity_matcher import EntityMatcher
 from chatbot.algorithm.model.predicate_matcher import PredicateMatcher
+from chatbot.algorithm.model.query_matcher import QueryMatcher
 from chatbot.algorithm.model.question_parser import QuestionParser
 
 
@@ -20,8 +21,9 @@ class App:
         self.agent_details = None
         dataset = Dataset()
         self.graph = dataset.get_graph()
+        self.query_matcher = QueryMatcher(self.graph)
         self.question_parser = QuestionParser()
-        self.predicate_matcher = PredicateMatcher()
+        # self.predicate_matcher = PredicateMatcher()
         # self.entity_matcher = EntityMatcher(self.graph)
 
     # user login

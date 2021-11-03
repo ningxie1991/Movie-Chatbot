@@ -30,4 +30,4 @@ class PredicateMatcher:
             )
             for rank, idx in enumerate(most_likely[:3])],
             columns=('Entity', 'Label', 'Score', 'Rank'))
-        return top_match['Label'].iloc[0]
+        return top_match.iloc[0]

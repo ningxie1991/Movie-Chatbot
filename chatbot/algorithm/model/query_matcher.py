@@ -1,7 +1,7 @@
 import re
 from chatbot.algorithm.model.predicate_matcher import PredicateMatcher
 from chatbot.algorithm.model.query_templates import QuestionTemplates
-from chatbot.algorithm.model.question_patterns import wh_pattern
+from chatbot.algorithm.model.question_patterns import wh_pattern, main_actor_character_pattern
 
 
 class QueryMatcher:
@@ -19,16 +19,19 @@ class QueryMatcher:
             pattern = wh_pattern.format(entity_label)
             relation = re.match(pattern, sentence).groups()[0]
             print("\n---- relation: {}".format(relation))
-            matched_pred = self.predicate_matcher.top_match(relation)
-            print("\n---- matched pred: {}".format(matched_pred))
 
-            if entity_type == 'TITLE':
-                query = self.query_templates.title_related_query(entity_label, matched_pred)
-            elif entity_type == 'DIRECTOR':
-                query = self.query_templates.director_related_query(entity_label, matched_pred)
-            elif entity_type == 'ACTOR':
-                query = self.query_templates.actor_related_query(entity_label, matched_pred)
-            elif entity_type == 'CHARACTER':
-                query = self.query_templates.chracter_related_query(entity_label, matched_pred)
+            if entity_type == 'TITLE' and re.search(main_actor_character_pattern, relation):
+                query = self.query_templates.main_actor_character_query(entity_label)
+            else:
+                matched_pred = self.predicate_matcher.top_match(relation)
+                print("\n---- matched pred: {}".format(matched_pred))
+                if entity_type == 'CHARACTER' and matched_pred['Label'] == 'actor':
+                    # different predicate because 'actor' will always match wdt:P161 which is cast member
+                    # in this case, we want the wdt:P175 which is performer
+                    pred = 'wdt:P175'
+                else:
+                    pred = matched_pred['Entity']
+                # query = self.query_templates.generate_query(entity_label, matched_pred)
+                query = self.query_templates.generate_wiki_query(entity_label, pred)
         return query
 
