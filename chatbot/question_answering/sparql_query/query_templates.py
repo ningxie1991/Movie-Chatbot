@@ -144,11 +144,11 @@ class QuestionTemplates:
 
     @staticmethod
     def generate_query(entity, predicate):
-        predicate = re.sub("http://www.wikidata.org/prop/direct/", 'ns1:', predicate)
+        predicate = re.sub("http://www.wikidata.org/prop/direct/", 'wdt:', predicate)
         query = '''
             PREFIX ddis: <http://ddis.ch/atai/>
             PREFIX wd: <http://www.wikidata.org/entity/>
-            PREFIX ns1: <http://www.wikidata.org/prop/direct/>
+            PREFIX wdt: <http://www.wikidata.org/prop/direct/>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
             SELECT ?lbl WHERE
@@ -164,7 +164,6 @@ class QuestionTemplates:
                 }}
                 ?y rdfs:label ?lbl .
             }}
-            ORDER BY ASC(?lbl) 
             LIMIT 10
         '''.format(entity, predicate, entity, predicate)
         return query
@@ -173,7 +172,7 @@ class QuestionTemplates:
     def generate_wiki_query(entity, predicate):
         predicate = re.sub("http://www.wikidata.org/prop/direct/", 'wdt:', predicate)
         query = '''
-                SELECT ?targetLabel WHERE
+                SELECT distinct ?targetLabel WHERE
                 {{ 
                     {{
                         ?entity rdfs:label "{}"@en .
@@ -193,22 +192,44 @@ class QuestionTemplates:
     @staticmethod
     def main_actor_character_query(entity):
         sparql_query = '''
-                SELECT ?characterLabel ?actorLabel
-                WHERE
-                {{
-                  ?film rdfs:label "{}"@en .
-                  ?film p:P161 [
-                        ps:P161 ?actor;
-                        pq:P453 ?character
-                  ].
-                  SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
+            SELECT distinct ?characterLabel ?actorLabel
+            WHERE
+            {{
+                {{ ?film rdfs:label "{}"@en . }}
+                UNION
+                {{ ?film wdt:P1476 "{}"@en . }}
+                UNION
+                {{ ?film rdfs:label "The {}"@en . }}
+                UNION
+                {{ ?film wdt:P1476 "The {}"@en .}}
+                UNION
+                {{ ?series rdfs:label "{}"@en ;
+                           wdt:P527 ?film.
                 }}
-                LIMIT 10
-            '''.format(entity)
+                {{ ?film p:P161 [
+                      ps:P161 ?actor;
+                      pq:P453 ?character ;
+                      pq:P3831 wd:Q1765879
+                    ].
+                }}
+                UNION
+                {{
+                    ?film p:P674 [
+                      ps:P674 ?character; 
+                      pq:P5800 wd:Q12317360
+                    ].
+                    ?character wdt:P175 ?actor .
+                }}
+                UNION
+                {{
+                    ?character p:P1441 [
+                        ps:P1441 ?film;
+                        pq:P2868 wd:Q12317360;
+                        pq:P175 ?actor
+                    ].
+                }}
+                SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
+            }}
+            LIMIT 10
+            '''.format(entity, entity, entity, entity, entity)
         return sparql_query
-
-
-# ?x ns1:P1441|ns1:P175 ?entity .
-# ?x ns1:P31 ?y .
-# ?y ns1:P279 wd:Q95074
-# ?x rdfs:label ?lbl .

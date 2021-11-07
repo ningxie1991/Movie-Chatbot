@@ -1,12 +1,8 @@
 import json
+import os
 import requests
 import time
-
-from chatbot.algorithm.data.dataset import Dataset
-from chatbot.algorithm.model.entity_matcher import EntityMatcher
-from chatbot.algorithm.model.predicate_matcher import PredicateMatcher
-from chatbot.algorithm.model.query_matcher import QueryMatcher
-from chatbot.algorithm.model.question_parser import QuestionParser
+from chatbot.question_answering.qa import Agent
 
 
 class App:
@@ -14,17 +10,13 @@ class App:
         # url of the speakeasy server
         self.url = "https://speakeasy.ifi.uzh.ch"
         # load config from a json file
-        with open("../../config/credentials.json", "r") as f:
+        dirname = os.path.dirname(__file__)
+        with open(os.path.join(dirname, "../../config/credentials.json"), "r") as f:
             credentials = json.load(f)
         self.username = credentials["agent"]["username"]
         self.password = credentials["agent"]["password"]
         self.agent_details = None
-        dataset = Dataset()
-        self.graph = dataset.get_graph()
-        self.query_matcher = QueryMatcher(self.graph)
-        self.question_parser = QuestionParser()
-        # self.predicate_matcher = PredicateMatcher()
-        # self.entity_matcher = EntityMatcher(self.graph)
+        self.qa_agent = Agent()
 
     # user login
     def login(self):
@@ -38,8 +30,8 @@ class App:
         return requests.get(url=self.url + "/api/user/current", params={"session": session_token})
 
     # user logout
-    def logout(self, session_token: str):
-        return requests.get(url=self.url + "/api/logout", params={"session": session_token})
+    def logout(self):
+        return requests.get(url=self.url + "/api/logout", params={"session": self.agent_details["sessionToken"]})
 
     # check available chat rooms
     def check_rooms(self, session_token: str):
@@ -78,7 +70,7 @@ class App:
                         if message["ordinal"] >= len(chatroom_messages[room_id]) and message["session"] != \
                                 self.agent_details["sessionId"]:
                             # process the message and find answer
-                            response = self.find_answer(message["message"])
+                            response = self.get_response(message["message"])
                             self.post_message(room_id=room_id, session_token=self.agent_details["sessionToken"],
                                               message=response)
 
@@ -87,24 +79,16 @@ class App:
             time.sleep(3)
             print("")
 
-    def find_answer(self, question):
-        response = "Hello , I got your message \"{}\" at {}.".format(question, time.strftime("%H:%M:%S, %d-%m-%Y",
-                                                                                             time.localtime()))
-
-        ### Part 1: Fact-oriented questions ###
-        # 1. get the movie-domain entities in the question
-        entities = self.question_parser.get_entities(question)
-
-        # 2. get the non-entity nouns in the question
-        nouns = self.question_parser.get_nouns(question, entities)
-
-        # 3. get the verbs in the question
-        verbs = self.question_parser.get_verbs(question)
-
-        # 4. find question pattern using nouns and verbs and determine the relation
-        # 5. match the relation with predicate
-        # 6. match the entity with a node in the graph
-        # 7. perform SPARQL query to find the answer
-        # 8. formulate the answer as a response
-
+    def get_response(self, question):
+        # response = "Hello , I got your message \"{}\" at {}.".format(question, time.strftime("%H:%M:%S, %d-%m-%Y", time.localtime()))
+        # Part 1: Fact-oriented questions
+        # 1. get the movie-domain entities, bos word and POS tag, nouns and verbs in the question
+        # 2. find the relation in the question using regex
+        # 3. match the relation with predicate
+        # 4. match the query pattern from bos and generate the query
+        # 5. perform SPARQL query to find the answer
+        # 6. formulate the answer as a response
+        response = self.qa_agent.answer(question)
+        # print(f"\nQ: {question} ")
+        print(f"A: {response}\n")
         return response

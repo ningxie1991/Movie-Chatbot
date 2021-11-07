@@ -7,6 +7,8 @@
 # Where is [the film location] of the [Iron Man] movie?
 # Who is the actor for Tony Stark?
 # Which character did Robert Downy Jr play in the Avengers movie?
-wh_pattern = "(?:Who |What |Which |Where )(?:is |are |was |were )(.*)(?: in| of| from| for)(?: the)?(?: movie)?(?: character)? {}(?: movie)?(?:\?)"
+wh_pattern = r"(?:Who |What |Which |Where )(?:is |are |was |were )(.*)(?: in| of| from| for)(?: the| a)?(?: movie| film |character)? {}"
+
+yesno_pattern = "is|was|are|were|does|do|did"
 
 main_actor_character_pattern = 'main actor|lead actor|main character|lead character'

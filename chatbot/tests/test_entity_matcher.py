@@ -1,9 +1,9 @@
-from chatbot.algorithm.data.dataset import Dataset
-from chatbot.algorithm.model.entity_matcher import EntityMatcher
+from chatbot.data.dataset import Dataset
+from chatbot.my_entity_linker.entity_linker import EntityLinker
 
 dataset = Dataset()
 graph = dataset.get_graph()
-entity_matcher = EntityMatcher(graph)
-entity = 'fictional character'
+entity_matcher = EntityLinker(graph)
+entity = 'character'
 match_node = entity_matcher.top_match(entity)
-print("\n--- the matching node of \"{}\" is {}\n".format(entity, match_node))
+print(f"\n--- the matching node of \"{entity}\" is {match_node}\n")

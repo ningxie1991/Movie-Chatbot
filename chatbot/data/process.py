@@ -1,17 +1,40 @@
+import os
+import re
+
 import numpy as np
 import pandas as pd
+from rdflib import URIRef, Namespace
 from sentence_transformers import SentenceTransformer
 
-from chatbot.algorithm.data.dataset import Dataset
-from chatbot.algorithm.util.data_util import read_data, expand_property_labels, get_entities_with_labels
+from chatbot.data.dataset import Dataset
+from chatbot.data.utils import read_data, expand_property_labels, get_entities_with_labels, get_alt_labels
+
+dirname = os.path.dirname(__file__)
+
+
+def process_graph(graph):
+    RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
+    SCHEMA = Namespace('http://schema.org/')
+    WDT = Namespace('http://www.wikidata.org/prop/direct/')
+    entities = []
+    for node in set(graph.subjects()) | {s for s in graph.objects() if isinstance(s, URIRef)}:
+        if re.match(r'^http://www.wikidata.org/entity/(.*)', node.toPython()) and graph.value(node, RDFS.label):
+            qid = re.match(r'^http://www.wikidata.org/entity/(.*)', node.toPython()).group(1)
+            label = graph.value(node, RDFS.label).toPython()
+            desc = graph.value(node, SCHEMA.description)
+            alt_labels = get_alt_labels(node.toPython())
+            print(f'qid: {qid}, label: {label}, altLabel: {alt_labels}, desc: {desc}')
+            entities.append((qid, label, alt_labels, desc))
+    df = pd.DataFrame(entities, columns=['QID', 'Label', 'AltLabel', 'Desc'])
+    df.to_csv(os.path.join(dirname, "../../data/ddis/14_graph_entities.csv"), index=False)
 
 
 def process_mit_movies_data():
-    train = read_data('../../../data/mit_movies_corpus/engtrain.bio')
-    train.to_csv("../../data/mit_movies_corpus/engtrain_cased.csv", index=False)
+    train = read_data(os.path.join(dirname, '../../../data/mit_movies_corpus/engtrain.bio'))
+    train.to_csv(os.path.join(dirname,"../../../data/mit_movies_corpus/engtrain_v2.csv"), index=False)
 
-    test = read_data('../../../data/mit_movies_corpus/engtest.bio')
-    test.to_csv("../../data/mit_movies_corpus/engtest_cased.csv", index=False)
+    test = read_data(os.path.join(dirname, '../../../data/mit_movies_corpus/engtest.bio'))
+    test.to_csv(os.path.join(dirname, "../../../data/mit_movies_corpus/engtest_v2.csv"), index=False)
 
 
 def map_wikidata_properties(graph_dir):
@@ -31,7 +54,7 @@ def map_wikidata_properties(graph_dir):
                                    )
 
     # pre-saved all the properties and their labels from wikidata
-    wikidata_properties = pd.read_csv('../../../data/wikidata/properties.csv')
+    wikidata_properties = pd.read_csv('../../data/wikidata/properties.csv')
     df = expand_property_labels(graph_properties, wikidata_properties)
     df.to_csv("../../data/wikidata/graph_properties_expanded.csv", index=False)
 
@@ -69,3 +92,10 @@ def save_embeds(graph, query, embeds_dir):
     df['Label']
     movie_embeds = model.encode(df['Label'])
     np.save(embeds_dir, movie_embeds)
+
+
+if __name__ == "__main__":
+    dirname = os.path.dirname(__file__)
+    properties_dir = os.path.join(dirname, '../../data/wikidata/graph_properties_expanded.csv')
+    embeds_dir = os.path.join(dirname, '../../data/wikidata/property_embeds.npy')
+    save_property_embeds(properties_dir, embeds_dir)

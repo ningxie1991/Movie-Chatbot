@@ -2,7 +2,7 @@ import editdistance
 from rdflib import URIRef, Namespace
 
 
-class EntityMatcher:
+class EntityLinker:
     def __init__(self, graph):
         self.graph = graph
 

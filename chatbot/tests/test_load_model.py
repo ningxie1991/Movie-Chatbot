@@ -1,9 +1,9 @@
 import os
 import joblib
-from chatbot.algorithm.util.ner_util import sent2features
+from chatbot.question_answering.ner_utils import sent2features
 
 dirname = os.path.dirname(__file__)
-filename = os.path.join(dirname, '../algorithm/saved_models/Movies_NER.sav')
+filename = os.path.join(dirname, '../my_entity_recognizer/output/ner_best.sav')
 loaded_model = joblib.load(filename)
 
 test_sentence_1 = [['Who', 'WP'], ['is', 'VBZ'],['the', 'DT'],['director', 'NN'],['of', 'IN'],['the', 'DT'],["Batman", 'NNP'],['movie', 'NN']]

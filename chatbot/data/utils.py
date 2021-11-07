@@ -24,6 +24,7 @@ def read_data(corpus_file):
     with open(corpus_file, encoding='utf-8') as f:
         data = np.empty((0, 4))
         words = []
+        words_for_pos = []
         tags = []
         sentences = []
         count = 1
@@ -32,16 +33,19 @@ def read_data(corpus_file):
             if not line:
                 s = np.array(sentences).reshape((-1, 1))
                 # capitalized first letter of first word
-                words[0] = words[0].title()
+                words_for_pos[0] = words_for_pos[0].title()
+                print(words)
                 w = np.array(words).reshape((-1, 1))
 
-                pos_tags = [pos for token, pos in pos_tag(words)]
+                pos_tags = [pos for token, pos in pos_tag(words_for_pos)]
+                print(pos_tags)
                 p = np.array(pos_tags).reshape((-1, 1))
                 t = np.array(tags).reshape((-1, 1))
                 chunk = np.hstack((s, w, p, t))
                 data = np.vstack((data, chunk))
 
                 words = []
+                words_for_pos = []
                 tags = []
                 sentences = []
                 count = count + 1
@@ -51,10 +55,11 @@ def read_data(corpus_file):
                 word = columns[-1]
                 tags.append(tag)
                 if tag in list_of_tags:
-                    # capitalized first letter of names and titles
-                    words.append(word.title())
+                    # capitalize all names and titles
+                    words_for_pos.append(word.upper())
                 else:
-                    words.append(word)
+                    words_for_pos.append(word)
+                words.append(word)
                 sentences.append("Sentence: " + str(count))
         return pd.DataFrame(data, columns=['Sentence #', 'Word', 'POS', 'Tag'])
 
@@ -89,3 +94,15 @@ def get_entities_with_labels(graph):
     for node in with_label:
         entities.append((node.toPython(), graph.value(node, RDFS.label).toPython()))
     return pd.DataFrame(entities, columns=['Entity', 'Label'])
+
+
+def get_alt_labels(qid):
+    query = f'''
+        SELECT DISTINCT ?xAltLabel  WHERE
+        {{ 
+            VALUES ?x {{ {qid} }}
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
+        }}
+    '''
+    print(f"---------- query: \n{query}")
+    return query
