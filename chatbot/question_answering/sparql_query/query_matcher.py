@@ -1,6 +1,11 @@
 import re
 
-entity_type_map = {'TITLE': 'wd:Q11424 wd:Q24856', 'CHARACTER': 'wd:Q95074 wd:Q15773347 wd:Q15632617'}
+entity_type_map = {'TITLE': 'wd:Q11424 wd:Q24856 wd:Q5398426',
+                   'CHARACTER': 'wd:Q95074 wd:Q15773347 wd:Q15632617 wdt:P1441 wdt:P674',
+                   'ACTOR': 'wd:Q33999 wdt:P161 wdt:P175',
+                   'DIRECTOR': 'wdt:P57',
+                   'GENRE': 'wdt:P136'
+                   }
 
 
 def wh_query(entities, relation, predicate):
@@ -28,16 +33,15 @@ def wh_query(entities, relation, predicate):
         where_clause += f'''
               ?x{index} wdt:P31 ?type .
               VALUES ?type {{ {entity_type_map[entity[1]]} }}
-              OPTIONAL {{ ?x{index} wdt:P577 ?date . }}
               ?x{index} <{pred}> ?target .
               OPTIONAL {{
                   ?y wdt:P179 ?x{index}.
-                  OPTIONAL {{ ?y wdt:P577 ?date . }}
                   ?y <{pred}> ?target.  
               }}'''
 
-        candidates = " ".join(f"wd:{c}" for c in entity[2])
-        filter_clause += f'''VALUES ?x{index} {{ {candidates} }}'''
+        if entity[2] and len(entity[2]) > 0:
+            candidates = " ".join(f"wd:{c}" for c in entity[2])
+            filter_clause += f'''VALUES ?x{index} {{ {candidates} }}'''
 
     query = f'''
         SELECT DISTINCT {variables} WHERE
@@ -64,21 +68,29 @@ def yesno_query(entities):
         variables += f''' ?x{index} ?x{index}Label '''
         original_label = entity[0]
         original_label_clean = re.sub('[,;.\?]', '', entity[0])
-        candidates = " ".join(f"wd:{c}" for c in entity[2])
+
+        union_clause = f'''
+            {{ ?x{index} rdfs:label "{original_label}"@en . }}
+            UNION
+            {{ ?x{index} skos:altLabel "{original_label}"@en . }}
+            UNION
+            {{ ?x{index} rdfs:label "{original_label_clean}"@en . }}
+            UNION
+            {{ ?x{index} skos:altLabel "{original_label_clean}"@en . }}
+        '''
+
+        if entity[2] and len(entity[2]) > 0:
+            candidates = " ".join(f"wd:{c}" for c in entity[2])
+            union_clause += f'''
+            UNION
+            {{ values ?x{index} {{ {candidates} }} }}'''
+
         with_clause += f'''
         WITH 
         {{
             select ?x{index} ?x{index}Label 
             where {{
-                {{ ?x{index} rdfs:label "{original_label}"@en . }}
-                UNION
-                {{ ?x{index} skos:altLabel "{original_label}"@en . }}
-                UNION
-                {{ ?x{index} rdfs:label "{original_label_clean}"@en . }}
-                UNION
-                {{ ?x{index} skos:altLabel "{original_label_clean}"@en . }}
-                UNION
-                {{ values ?x{index} {{ {candidates} }} }}
+                {union_clause}
             }}
         }} AS %x{index}'''
 
@@ -88,9 +100,9 @@ def yesno_query(entities):
         if index < len(entities) - 1:
             if index == 0:
                 where_clause += f'''
-                {{ ?x{index} ?p ?x{index+1}. }}
+                {{ ?x{index} ?p ?x{index + 1}. }}
                 UNION
-                {{ ?x{index+1} ?p ?x{index}. }}'''
+                {{ ?x{index + 1} ?p ?x{index}. }}'''
             else:
                 where_clause += f'''
                 UNION
@@ -111,5 +123,45 @@ def yesno_query(entities):
         ORDER BY ASC(?targetLabel)
         LIMIT 30
     '''
+    print(f"---------- query: \n{query}")
+    return query
+
+
+def action_query(entities, relation):
+    where_clause = ''
+    for index, entity in enumerate(entities):
+        entity_type = entity[1]
+        if entity_type == 'TITLE':
+            where_clause += f'''
+                          ?target ?p{index} ?x{index}.
+                          VALUES ?x{index} {{ {entity_type_map[entity[1]]} }}'''
+
+            if entity[2] and len(entity[2]) > 0:
+                candidates = " ".join(f"wd:{c}" for c in entity[2])
+                where_clause += f'''VALUES ?target {{ {candidates} }}'''
+        else:
+            where_clause += f'''
+              ?target ?p{index} ?x{index}.
+              VALUES ?p{index} {{ {entity_type_map[entity[1]]} }}'''
+
+            if entity[2] and len(entity[2]) > 0:
+                candidates = " ".join(f"wd:{c}" for c in entity[2])
+                where_clause += f'''
+                VALUES ?x{index} {{ {candidates} }}'''
+
+            if entity_type == 'GENRE' and re.search('movie|film', relation):
+                where_clause += f'''
+                ?target wdt:P31 ?type
+                VALUES ?type {{ {entity_type_map['TITLE']} }}'''
+
+    query = f'''
+            SELECT DISTINCT ?target ?targetLabel
+            WHERE
+            {{ 
+                {where_clause}
+                SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
+            }}
+            LIMIT 30
+        '''
     print(f"---------- query: \n{query}")
     return query

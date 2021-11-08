@@ -45,7 +45,7 @@ class App:
     # post a message to a chat room
     def post_message(self, room_id: str, session_token: str, message: str):
         return requests.post(url=self.url + "/api/room/{}".format(room_id),
-                             params={"roomId": room_id, "session": session_token}, data=message)
+                             params={"roomId": room_id, "session": session_token}, data=message.encode('utf-8'))
 
     def start_chat(self):
         chatroom_messages = {}
@@ -65,6 +65,18 @@ class App:
                 if room_id not in chatroom_messages.keys():
                     chatroom_messages[room_id] = []
 
+                if len(new_messages) == 0:
+                    response = '''<dl>
+                    Welcome! You can ask me questions like:
+                      <dt>- Who is the main character in the Avengers movie?</dt>
+                      <dt>- Is Spider Man part of the Avengers?</dt>
+                      <dt>- Does Thanos appear in the same movie as Iron Man?</dt>
+                      <dt>- Did Christopher Nolan ever work on a Batman movie?</dt>
+                      <dt>- Does Wanda know Vision?</dt>
+                    </dl?'''
+                    self.post_message(room_id=room_id, session_token=self.agent_details["sessionToken"],
+                                      message=response)
+
                 if len(chatroom_messages[room_id]) != len(new_messages):
                     for message in new_messages:
                         if message["ordinal"] >= len(chatroom_messages[room_id]) and message["session"] != \
@@ -80,7 +92,7 @@ class App:
             print("")
 
     def get_response(self, question):
-        # response = "Hello , I got your message \"{}\" at {}.".format(question, time.strftime("%H:%M:%S, %d-%m-%Y", time.localtime()))
+
         # Part 1: Fact-oriented questions
         # 1. get the movie-domain entities, bos word and POS tag, nouns and verbs in the question
         # 2. find the relation in the question using regex
