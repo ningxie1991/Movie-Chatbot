@@ -33,9 +33,11 @@ def wh_query(entities, relation, predicate):
         where_clause += f'''
               ?x{index} wdt:P31 ?type .
               VALUES ?type {{ {entity_type_map[entity[1]]} }}
+              OPTIONAL {{ ?x{index} wdt:P577 ?date . }}
               ?x{index} <{pred}> ?target .
               OPTIONAL {{
                   ?y wdt:P179 ?x{index}.
+                  OPTIONAL {{ ?y wdt:P577 ?date . }}
                   ?y <{pred}> ?target.  
               }}'''
 
