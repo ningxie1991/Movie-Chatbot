@@ -20,6 +20,7 @@ class Agent:
         self.image_service = ImageService(dataset.graph)
         self.verb_pos = ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
         self.wh_pos = ['WDT', 'WP', 'WP$', 'WRB']
+        print("loaded Agent")
 
     def answer(self, question):
         entities = self.question_parser.parse(question)
@@ -91,7 +92,7 @@ class Agent:
                         results = self.rdf_query_service.query_action(entities)
 
                     if results.empty:
-                        response = f"Sorry, I can't."
+                        response = f"Sorry, I can't find it."
                     else:
                         if is_image_question(relation):
                             result = results.iloc[0]

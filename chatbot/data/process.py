@@ -8,27 +8,9 @@ from sentence_transformers import SentenceTransformer
 
 from chatbot.data.dataset import Dataset
 from chatbot.data.utils import read_data, expand_property_labels, get_movies, \
-    get_directors, get_actors, get_characters, get_genres
+    get_directors, get_actors, get_characters, get_genres, convert_images_json
 
 dirname = os.path.dirname(__file__)
-
-
-def process_graph(graph):
-    RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
-    SCHEMA = Namespace('http://schema.org/')
-    WDT = Namespace('http://www.wikidata.org/prop/direct/')
-    entities = []
-    for node in set(graph.subjects()) | {s for s in graph.objects() if isinstance(s, URIRef)}:
-        if re.match(r'^http://www.wikidata.org/entity/(.*)', node.toPython()) and graph.value(node, RDFS.label):
-            qid = re.match(r'^http://www.wikidata.org/entity/(.*)', node.toPython()).group(1)
-            label = graph.value(node, RDFS.label).toPython()
-            desc = graph.value(node, SCHEMA.description)
-            alt_labels = get_alt_labels(node.toPython())
-            print(f'qid: {qid}, label: {label}, altLabel: {alt_labels}, desc: {desc}')
-            entities.append((qid, label, alt_labels, desc))
-    df = pd.DataFrame(entities, columns=['QID', 'Label', 'AltLabel', 'Desc'])
-    df.to_csv(os.path.join(dirname, "../../data/ddis/14_graph_entities.csv"), index=False)
-
 
 def process_mit_movies_data():
     train = read_data(os.path.join(dirname, '../../../data/mit_movies_corpus/engtrain.bio'))
@@ -58,12 +40,6 @@ def map_wikidata_properties(graph_dir):
     wikidata_properties = pd.read_csv('../../data/wikidata/properties.csv')
     df = expand_property_labels(graph_properties, wikidata_properties)
     df.to_csv("../../data/wikidata/graph_properties_expanded.csv", index=False)
-
-
-def map_wikidata_entities():
-    dataset = Dataset()
-    df = get_graph_entities(dataset.graph)
-    df.to_csv("../../data/ddis/graph_entities.csv", index=False)
 
 
 def movie_entities(graph):
@@ -120,9 +96,4 @@ def save_embeds(graph, query, embeds_dir):
 
 
 if __name__ == "__main__":
-    dataset = Dataset()
-    movie_entities(dataset.graph)
-    director_entities(dataset.graph)
-    actor_entities(dataset.graph)
-    character_entities(dataset.graph)
-    genre_entities(dataset.graph)
+    convert_images_json()

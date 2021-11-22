@@ -18,6 +18,7 @@ class RDFQueryService:
             'GENRE': [self.WDT.P136]
         }
         self.columns = ['Entity', 'EntityLabel', 'Target', 'TargetLabel', "Date"]
+        print("loaded RDFQueryService")
 
     def query_wh(self, entities, relation):
         graph = self.graph

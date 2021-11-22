@@ -1,3 +1,6 @@
+import json
+import os
+
 import pandas as pd
 import numpy as np
 import re
@@ -166,3 +169,23 @@ def get_genres(graph):
     df = pd.DataFrame(entities, columns=['Entity', 'EntityLabel'])
     df = df.drop_duplicates().reset_index(drop=True)
     return df
+
+
+def convert_images_json():
+    dirname = os.path.dirname(__file__)
+    with open(os.path.join(dirname, '../../data/ddis/images.json'), 'r') as json_file:
+        images_map = json.load(json_file)
+
+    new_map = {}
+    for item in images_map:
+        for movie_id in item['movie']:
+            if movie_id not in new_map:
+                new_map[movie_id] = []
+            new_map[movie_id].append({'img': item['img'], 'type': item['type'], 'cast': item['cast']})
+        for actor_id in item['cast']:
+            if actor_id not in new_map:
+                new_map[actor_id] = []
+            new_map[actor_id].append({'img': item['img'], 'type': item['type'], 'movie': item['movie']})
+
+    with open(os.path.join(dirname, '../../data/ddis/new_images.json'), 'w', encoding='utf-8') as f:
+        json.dump(new_map, f, ensure_ascii=False, indent=4)

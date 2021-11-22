@@ -1,13 +1,9 @@
 import re
 import joblib
 import os
-
-import pandas as pd
 import spacy
 from nltk.tokenize.treebank import TreebankWordDetokenizer
 from spacy.kb import KnowledgeBase
-
-from chatbot.algorithm.predicate_linker import PredicateLinker
 from chatbot.algorithm.question_answering.utils.ner import sent2features
 from nltk import word_tokenize
 from chatbot.data.utils import pos_tag
@@ -19,18 +15,19 @@ class QuestionParser:
     def __init__(self):
         dirname = os.path.dirname(__file__)
         self.loaded_model = joblib.load(os.path.join(dirname, '../../saved_models/ner_best.sav'))
-        self.predicate_linker = PredicateLinker()
         self.noun_pos = ['NN', 'NNP', 'NNPS', 'NNS']
         self.verb_pos = ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
         self.wh_pos = ['WDT', 'WP', 'WP$', 'WRB']
         self.nlp = spacy.load(os.path.join(dirname, '../../saved_models/spacy_nlp'))
         self.kb = KnowledgeBase(vocab=self.nlp.vocab, entity_vector_length=256)
         self.kb.from_disk(os.path.join(dirname, '../../saved_models/spacy_kb'))
-        self.movies = pd.read_csv(os.path.join(dirname, '../../../../data/ddis/entity_categories/movie_entities.csv'))
-        self.directors = pd.read_csv(os.path.join(dirname, '../../../../data/ddis/entity_categories/director_entities.csv'))
-        self.actors = pd.read_csv(os.path.join(dirname, '../../../../data/ddis/entity_categories/actor_entities.csv'))
-        self.characters = pd.read_csv(os.path.join(dirname, '../../../../data/ddis/entity_categories/character_entities.csv'))
-        self.genres = pd.read_csv(os.path.join(dirname, '../../../../data/ddis/entity_categories/genre_entities.csv'))
+        print("loaded QuestionParser")
+        # self.movies = pd.read_csv(os.path.join(dirname, '../../../../data/ddis/entity_categories/movie_entities.csv'))
+        # self.directors = pd.read_csv(os.path.join(dirname, '../../../../data/ddis/entity_categories/director_entities.csv'))
+        # self.actors = pd.read_csv(os.path.join(dirname, '../../../../data/ddis/entity_categories/actor_entities.csv'))
+        # self.characters = pd.read_csv(os.path.join(dirname, '../../../../data/ddis/entity_categories/character_entities.csv'))
+        # self.genres = pd.read_csv(os.path.join(dirname, '../../../../data/ddis/entity_categories/genre_entities.csv'))
+        # self.ambiguous_types = ['TITLE', 'DIRECTOR', 'ACTOR', 'CHARACTER', 'GENRE']
 
     def parse(self, sentence):
         tokens = word_tokenize(sentence)
@@ -73,6 +70,8 @@ class QuestionParser:
         # print([(s, l) for s, l, c in entities])
         # print(entities)
         return entities
+
+
 
 
 

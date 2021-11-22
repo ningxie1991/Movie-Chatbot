@@ -15,6 +15,7 @@ class PredicateLinker:
         self.properties = pd.read_csv(os.path.join(dirname, '../../data/wikidata/graph_properties_expanded.csv'))
         self.property_labels = self.properties['PropertyLabel']
         self.property_embeds = np.load(os.path.join(dirname, '../../data/wikidata/property_embeds.npy'))
+        print("loaded PredicateLinker")
 
     def top_match(self, relation):
         relation_embed = self.model.encode(relation)

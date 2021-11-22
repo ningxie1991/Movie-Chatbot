@@ -46,6 +46,7 @@ class RecommenderService:
             'ACTOR': self.WDT.P106,
             'GENRE': self.WDT.P31
         }
+        print("loaded RecommenderService")
 
     def top_match(self, entities, relation):
         graph = self.graph
