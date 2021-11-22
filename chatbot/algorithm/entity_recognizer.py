@@ -4,7 +4,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import sklearn_crfsuite
-from chatbot.question_answering.ner_utils import collate, sent2features, sent2labels
+from chatbot.algorithm.question_answering.utils.ner import collate, sent2features, sent2labels
 
 
 class MoviesNER:

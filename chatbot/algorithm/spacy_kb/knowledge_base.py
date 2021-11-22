@@ -11,8 +11,8 @@ import os
 import csv
 
 dirname = os.path.dirname(__file__)
-entity_emb = np.load(os.path.join(dirname, '../../data/ddis/entity_embeds.npy'))
-with open('../../data/ddis/entity_ids.del', 'r') as ifile:
+entity_emb = np.load(os.path.join(dirname, '../../../data/ddis/entity_embeds.npy'))
+with open('../../../data/ddis/entity_ids.del', 'r') as ifile:
     ent2id = {rdflib.term.URIRef(ent): int(idx) for idx, ent in csv.reader(ifile, delimiter='\t')}
     id2ent = {v: k for k, v in ent2id.items()}
 
@@ -25,7 +25,7 @@ SCHEMA = Namespace('http://schema.org/')
 def create_kb():
     """ Step 1: create the Knowledge Base in spaCy and write it to file """
     nlp = spacy.load("en_core_web_lg")
-    entities = pd.read_csv(os.path.join(dirname, '../../data/ddis/14_graph_entities.csv'), encoding='utf-8')
+    entities = pd.read_csv(os.path.join(dirname, '../../../data/ddis/14_graph_entities.csv'), encoding='utf-8')
     print(f'names: {entities.shape[0]}')
 
     kb = KnowledgeBase(vocab=nlp.vocab, entity_vector_length=256)
@@ -57,8 +57,8 @@ def create_kb():
                 probs = [1/count for qid in same_name_qids]
                 kb.add_alias(alias=name, entities=same_name_qids, probabilities=probs)
 
-    kb.to_disk(os.path.join(dirname, '../question_answering/saved_models/spacy_kb'))
-    nlp.to_disk(os.path.join(dirname, '../question_answering/saved_models/spacy_nlp'))
+    kb.to_disk(os.path.join(dirname, '../saved_models/spacy_kb'))
+    nlp.to_disk(os.path.join(dirname, '../saved_models/spacy_nlp'))
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ import json
 import os
 import requests
 import time
-from chatbot.question_answering.qa import Agent
+from chatbot.algorithm.question_answering.agent import Agent
 
 
 class App:
@@ -66,14 +66,7 @@ class App:
                     chatroom_messages[room_id] = []
 
                 if len(new_messages) == 0:
-                    response = '''<dl>
-                    Welcome! You can ask me questions like:
-                      <dt>- Who is the main character in the Avengers movie?</dt>
-                      <dt>- Is Spider Man part of the Avengers?</dt>
-                      <dt>- Does Thanos appear in the same movie as Iron Man?</dt>
-                      <dt>- Did Christopher Nolan ever work on a Batman movie?</dt>
-                      <dt>- Does Wanda know Vision?</dt>
-                    </dl?'''
+                    response = 'Hello! What would you like to know about movies?'
                     self.post_message(room_id=room_id, session_token=self.agent_details["sessionToken"],
                                       message=response)
 

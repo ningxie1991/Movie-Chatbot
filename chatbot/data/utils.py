@@ -8,7 +8,26 @@ from flair.models import SequenceTagger
 # load tagger
 tagger = SequenceTagger.load("flair/pos-english")
 
+WD = Namespace('http://www.wikidata.org/entity/')
+WDT = Namespace('http://www.wikidata.org/prop/direct/')
+RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
+SCHEMA = Namespace('http://schema.org/')
 
+entity_type_map = {
+    'TITLE': [WD.Q11424, WD.Q24856, WD.Q5398426, WD.Q7725310, WD.Q15416],
+    'DIRECTOR': [WD.Q2526255, WD.Q3455803],
+    'CHARACTER': [WD.Q95074, WD.Q15773347, WD.Q15632617],
+    'ACTOR': [WD.Q33999, WD.Q10800557],
+    'GENRE': [WD.Q483394]
+}
+
+entity_predicate_map = {
+    'DIRECTOR': [WDT.P57],
+    'CHARACTER': [WDT.P1441, WDT.P674],
+    'ACTOR': [WDT.P161, WDT.P175],
+    'GENRE': [WDT.P136]
+}
+        
 def pos_tag(tokens):
     s = ' '.join(tokens)
     sentence = Sentence(s)
@@ -87,22 +106,63 @@ def expand_property_labels(graph_properties, wikidata_properties):
     return pd.DataFrame(data, columns=['Property', 'PropertyLabel'])
 
 
-def get_entities_with_labels(graph):
-    RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
-    with_label = set(graph.subjects(RDFS.label, None))
+def get_movies(graph):
     entities = []
-    for node in with_label:
-        entities.append((node.toPython(), graph.value(node, RDFS.label).toPython()))
-    return pd.DataFrame(entities, columns=['Entity', 'Label'])
+    nodes = [s for t in entity_type_map['TITLE'] for s in graph.subjects(WDT.P31, t) if graph.value(s, RDFS.label)]
+
+    for s in nodes:
+        entities.append((s.toPython()[len(WD):], graph.value(s, RDFS.label)))
+
+    df = pd.DataFrame(entities, columns=['Entity', 'EntityLabel'])
+    df = df.drop_duplicates().reset_index(drop=True)
+    return df
 
 
-def get_alt_labels(qid):
-    query = f'''
-        SELECT DISTINCT ?xAltLabel  WHERE
-        {{ 
-            VALUES ?x {{ {qid} }}
-            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
-        }}
-    '''
-    print(f"---------- query: \n{query}")
-    return query
+def get_actors(graph):
+    entities = []
+    nodes = [s for pred in entity_predicate_map['ACTOR'] for s in graph.objects(None, pred) if graph.value(s, RDFS.label)]
+
+    for s in nodes:
+        entities.append((s.toPython()[len(WD):], graph.value(s, RDFS.label)))
+
+    df = pd.DataFrame(entities, columns=['Entity', 'EntityLabel'])
+    df = df.drop_duplicates().reset_index(drop=True)
+    return df
+
+
+def get_directors(graph):
+    entities = []
+    nodes = [s for s in graph.objects(None, WDT.P57) if graph.value(s, RDFS.label)]
+
+    for s in nodes:
+        entities.append((s.toPython()[len(WD):], graph.value(s, RDFS.label)))
+
+    df = pd.DataFrame(entities, columns=['Entity', 'EntityLabel'])
+    df = df.drop_duplicates().reset_index(drop=True)
+    return df
+
+
+def get_characters(graph):
+    entities = []
+    nodes = [s for s in graph.subjects(WDT.P175, None) if graph.value(s, RDFS.label)]
+    characters = [(s, p, o) for n in nodes for t in entity_type_map['CHARACTER'] for s, p, o in
+                  graph.triples((n, WDT.P31, t))]
+
+    for s, p, o in characters:
+        entities.append((s.toPython()[len(WD):], graph.value(s, RDFS.label)))
+
+    df = pd.DataFrame(entities, columns=['Entity', 'EntityLabel'])
+    df = df.drop_duplicates().reset_index(drop=True)
+    return df
+
+
+def get_genres(graph):
+    entities = []
+    nodes = [s for s in graph.objects(None, WDT.P136) if graph.value(s, RDFS.label)]
+
+    for s in nodes:
+        entities.append((s.toPython()[len(WD):], graph.value(s, RDFS.label)))
+
+    df = pd.DataFrame(entities, columns=['Entity', 'EntityLabel'])
+    df = df.drop_duplicates().reset_index(drop=True)
+    return df

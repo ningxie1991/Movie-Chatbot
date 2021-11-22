@@ -22,7 +22,7 @@ def add_labels(ner, train_dataset, test_dataset):
 
 
 def train_er():
-    nlp = spacy.load(os.path.join(dirname, '../question_answering/saved_models/spacy_nlp'))
+    nlp = spacy.load(os.path.join(dirname, '../saved_models/spacy_nlp'))
     ner = nlp.get_pipe("ner")
 
     train_dataset = srsly.read_json(os.path.join(dirname, 'data/engtrain_cased.json'))
@@ -65,7 +65,7 @@ def train_er():
 
 def eval_er():
     """ Step 3: Evaluate the new Entity Linking component by applying it to unseen text. """
-    nlp = spacy.load(os.path.join(dirname, './output/model-best'))
+    nlp = spacy.load(os.path.join(dirname, 'output/model-best'))
 
     text = "Did Christopher Nolan ever work on a Batman movie?"
     doc = nlp(text)

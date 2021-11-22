@@ -1,8 +1,12 @@
 import re
 
 
-def format_link(uri, label):
-    return f"<a href='{uri}' title='{label}' target='_blank'>{label}</a>"
+def format_entity(qid, label):
+    return f"{label} (wd:{qid})"
+
+
+def format_image(qid):
+    return f"image:{qid}"
 
 
 def format_relation(relation):
@@ -18,4 +22,3 @@ def format_relation(relation):
         return f"of the {relation}"
     else:
         return f"the {relation} of"
-

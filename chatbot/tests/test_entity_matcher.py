@@ -1,5 +1,5 @@
 from chatbot.data.dataset import Dataset
-from chatbot.my_entity_linker.entity_linker import EntityLinker
+from chatbot.algorithm.entity_linker import EntityLinker
 
 dataset = Dataset()
 graph = dataset.get_graph()

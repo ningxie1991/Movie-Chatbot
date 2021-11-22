@@ -9,7 +9,7 @@ from nltk.tokenize.treebank import TreebankWordDetokenizer
 
 def to_json():
     dirname = os.path.dirname(__file__)
-    df = pd.read_csv(os.path.join(dirname, '../../../data/mit_movies_corpus/cased/engtest_cased.csv'))
+    df = pd.read_csv(os.path.join(dirname, '../../../../data/mit_movies_corpus/cased/engtest_cased.csv'))
     grouped = df.groupby('Sentence #')
     data = []
     for name, group in grouped:

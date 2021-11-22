@@ -1,6 +1,7 @@
-from chatbot.question_answering.question.patterns import is_action_question, is_wh_question, is_yesno_question
-
 # test question patterns
+from chatbot.algorithm.question_answering.question.patterns import is_wh_question, is_yesno_question, \
+    is_action_question
+
 questions = [
                 'Who is the director of the Batman movie?',
                 'What is the name of the lead actor in the movie Batman?',

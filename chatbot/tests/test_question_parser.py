@@ -1,7 +1,4 @@
-from pandas import json_normalize
-from qwikidata.sparql import return_sparql_query_results
-
-from chatbot.question_answering.question.parser import QuestionParser
+from chatbot.sparql_module.question_answering.question.parser import QuestionParser
 
 question_parser = QuestionParser()
 sentences = [
