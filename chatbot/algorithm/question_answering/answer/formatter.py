@@ -2,7 +2,10 @@ import re
 
 
 def format_entity(qid, label):
-    return f"{label} (wd:{qid})"
+    if re.match(r"^wd:|wdt:", qid):
+        return f"{label} ({qid})"
+    else:
+        return label
 
 
 def format_image(qid):

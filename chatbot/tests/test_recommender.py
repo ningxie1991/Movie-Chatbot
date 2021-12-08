@@ -7,7 +7,7 @@ question_parser = QuestionParser()
 dataset = Dataset()
 recommender = RecommenderService(dataset.graph)
 
-question = 'I like the Jurassic Park movie; can you recommend any similar movies?'
+question = 'I like Iron Man; can you recommend any similar movies?'
 entities = question_parser.parse(question)
 first_entity = entities[0]
 relation = get_relation(question, first_entity[0])

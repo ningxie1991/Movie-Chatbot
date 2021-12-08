@@ -16,3 +16,5 @@ truecase~=0.0.14
 stanfordnlp~=0.2.0
 spacy~=3.1.4
 srsly~=2.4.2
+gensim~=3.8.3
+contractions~=0.0.58

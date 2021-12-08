@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import numpy as np
 import re
-from rdflib import Namespace
+from rdflib import Namespace, URIRef
 from flair.data import Sentence
 from flair.models import SequenceTagger
 
@@ -30,7 +30,8 @@ entity_predicate_map = {
     'ACTOR': [WDT.P161, WDT.P175],
     'GENRE': [WDT.P136]
 }
-        
+
+
 def pos_tag(tokens):
     s = ' '.join(tokens)
     sentence = Sentence(s)
@@ -109,9 +110,19 @@ def expand_property_labels(graph_properties, wikidata_properties):
     return pd.DataFrame(data, columns=['Property', 'PropertyLabel'])
 
 
+def get_entities(graph):
+    nodes = []
+    for node in graph.all_nodes():
+        if isinstance(node, URIRef) and graph.value(node, RDFS.label):
+            nodes.append((node.toPython()[len(WD):], graph.value(node, RDFS.label)))
+    df = pd.DataFrame(nodes, columns=['Entity', 'EntityLabel'])
+    df = df.drop_duplicates().reset_index(drop=True)
+    return df
+
+
 def get_movies(graph):
     entities = []
-    nodes = [s for t in entity_type_map['TITLE'] for s in graph.subjects(WDT.P31, t) if graph.value(s, RDFS.label)]
+    nodes = [s for s in graph.subjects(WDT.P57, None) if graph.value(s, RDFS.label)]
 
     for s in nodes:
         entities.append((s.toPython()[len(WD):], graph.value(s, RDFS.label)))
@@ -123,7 +134,7 @@ def get_movies(graph):
 
 def get_actors(graph):
     entities = []
-    nodes = [s for pred in entity_predicate_map['ACTOR'] for s in graph.objects(None, pred) if graph.value(s, RDFS.label)]
+    nodes = [s for s in graph.objects(None, WDT.P161) if graph.value(s, RDFS.label)]
 
     for s in nodes:
         entities.append((s.toPython()[len(WD):], graph.value(s, RDFS.label)))

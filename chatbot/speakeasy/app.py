@@ -1,7 +1,10 @@
 import json
+import logging
 import os
 import requests
 import time
+import threading
+import queue
 from chatbot.algorithm.question_answering.agent import Agent
 
 
@@ -50,41 +53,42 @@ class App:
     def start_chat(self):
         chatroom_messages = {}
         while True:
-            current_rooms = self.check_rooms(session_token=self.agent_details["sessionToken"]).json()["rooms"]
-            print("--- {} chatrooms available".format(len(current_rooms)))
+            try:
+                current_rooms = self.check_rooms(session_token=self.agent_details["sessionToken"]).json()["rooms"]
+                print("--- {} chatrooms available".format(len(current_rooms)))
 
-            for idx, room in enumerate(current_rooms):
-                room_id = room["uid"]
-                print("chat room - {}: {}".format(idx, room_id))
+                for idx, room in enumerate(current_rooms):
+                    room_id = room["uid"]
+                    print("chat room - {}: {}".format(idx, room_id))
 
-                new_room_state = self.check_room_state(room_id=room_id, since=0,
-                                                       session_token=self.agent_details["sessionToken"]).json()
-                new_messages = new_room_state["messages"]
-                print("found {} messages".format(len(new_messages)))
+                    new_room_state = self.check_room_state(room_id=room_id, since=0,
+                                                           session_token=self.agent_details["sessionToken"]).json()
+                    new_messages = new_room_state["messages"]
+                    print("found {} messages".format(len(new_messages)))
 
-                if room_id not in chatroom_messages.keys():
-                    chatroom_messages[room_id] = []
+                    if room_id not in chatroom_messages.keys():
+                        chatroom_messages[room_id] = []
 
-                if len(new_messages) == 0:
-                    response = 'Hello! What would you like to know about movies?'
-                    self.post_message(room_id=room_id, session_token=self.agent_details["sessionToken"],
-                                      message=response)
+                    if len(new_messages) == 0:
+                        response = 'Hello! What would you like to know about movies?'
+                        self.post_message(room_id=room_id, session_token=self.agent_details["sessionToken"],
+                                          message=response)
 
-                if len(chatroom_messages[room_id]) != len(new_messages):
-                    for message in new_messages:
-                        if message["ordinal"] >= len(chatroom_messages[room_id]) and message["session"] != \
-                                self.agent_details["sessionId"]:
-                            # process the message and find answer
-                            response = self.get_response(message["message"])
-                            self.post_message(room_id=room_id, session_token=self.agent_details["sessionToken"],
-                                              message=response)
+                    if len(chatroom_messages[room_id]) != len(new_messages):
+                        for message in new_messages:
+                            if message["ordinal"] >= len(chatroom_messages[room_id]) and message["session"] != \
+                                    self.agent_details["sessionId"]:
+                                # process the message and find answer
+                                response = self.start_thread(message["message"])
+                                self.post_message(room_id=room_id, session_token=self.agent_details["sessionToken"],
+                                                  message=response)
 
-                chatroom_messages[room_id] = new_messages
-
+                    chatroom_messages[room_id] = new_messages
+            except Exception as e:
+                print("Error:", e)
             time.sleep(3)
-            print("")
 
-    def get_response(self, question):
+    def get_response(self, question, q):
 
         # Part 1: Fact-oriented questions
         # 1. get the movie-domain entities, bos word and POS tag, nouns and verbs in the question
@@ -93,7 +97,20 @@ class App:
         # 4. match the query pattern from bos and generate the query
         # 5. perform SPARQL query to find the answer
         # 6. formulate the answer as a response
+        logging.info("Thread %s: starting", question)
         response = self.qa_agent.answer(question)
-        # print(f"\nQ: {question} ")
-        print(f"A: {response}\n")
-        return response
+        q.put(response)
+        logging.info("Thread %s: finishing", question)
+        # return response
+
+    def start_thread(self, question):
+        q = queue.Queue()
+        try:
+            t = threading.Thread(target=self.get_response, args=(question, q,))
+            t.start()
+            t.join()
+            response = q.get()
+            return response
+        except Exception as e:
+            print("Error:", e)
+            return "Sorry, I don't know the answer."

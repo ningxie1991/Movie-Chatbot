@@ -3,7 +3,6 @@ import random
 import os
 import srsly
 import spacy
-from spacy import displacy
 from spacy.training import Example
 from spacy.util import minibatch, compounding
 

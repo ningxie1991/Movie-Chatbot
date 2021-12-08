@@ -7,7 +7,7 @@ question_parser = QuestionParser()
 dataset = Dataset()
 rdf_query_service = RDFQueryService(dataset.graph)
 
-question = 'What was Angelina Jolie born?'
+question = 'Where was Angelina Jolie born?'
 entities = question_parser.parse(question)
 first_entity = entities[0]
 relation = get_relation(question, first_entity[0])
@@ -33,11 +33,11 @@ print(results)
 # results = rdf_query_service.query_action(entities)
 # print(results)
 #
-# question = 'Can you recommend me some comedy movies?'
-# relation = get_relation(question)
-# entities = question_parser.parse(question)
-# results = rdf_query_service.query_action(entities)
-# print(results)
+question = 'Can you recommend me some comedy movies?'
+relation = get_relation(question)
+entities = question_parser.parse(question)
+results = rdf_query_service.query_action(entities)
+print(results)
 #
 # question = 'Can you recommend me some comedy movies of Woody Allen?'
 # relation = get_relation(question)

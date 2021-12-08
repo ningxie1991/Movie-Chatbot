@@ -1,9 +1,9 @@
 import re
+import contractions
 import joblib
 import os
-import spacy
 from nltk.tokenize.treebank import TreebankWordDetokenizer
-from spacy.kb import KnowledgeBase
+from chatbot.algorithm.entity_linker import EntityLinker
 from chatbot.algorithm.question_answering.utils.ner import sent2features
 from nltk import word_tokenize
 from chatbot.data.utils import pos_tag
@@ -15,21 +15,11 @@ class QuestionParser:
     def __init__(self):
         dirname = os.path.dirname(__file__)
         self.loaded_model = joblib.load(os.path.join(dirname, '../../saved_models/ner_best.sav'))
-        self.noun_pos = ['NN', 'NNP', 'NNPS', 'NNS']
-        self.verb_pos = ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
-        self.wh_pos = ['WDT', 'WP', 'WP$', 'WRB']
-        self.nlp = spacy.load(os.path.join(dirname, '../../saved_models/spacy_nlp'))
-        self.kb = KnowledgeBase(vocab=self.nlp.vocab, entity_vector_length=256)
-        self.kb.from_disk(os.path.join(dirname, '../../saved_models/spacy_kb'))
-        print("loaded QuestionParser")
-        # self.movies = pd.read_csv(os.path.join(dirname, '../../../../data/ddis/entity_categories/movie_entities.csv'))
-        # self.directors = pd.read_csv(os.path.join(dirname, '../../../../data/ddis/entity_categories/director_entities.csv'))
-        # self.actors = pd.read_csv(os.path.join(dirname, '../../../../data/ddis/entity_categories/actor_entities.csv'))
-        # self.characters = pd.read_csv(os.path.join(dirname, '../../../../data/ddis/entity_categories/character_entities.csv'))
-        # self.genres = pd.read_csv(os.path.join(dirname, '../../../../data/ddis/entity_categories/genre_entities.csv'))
-        # self.ambiguous_types = ['TITLE', 'DIRECTOR', 'ACTOR', 'CHARACTER', 'GENRE']
+        self.entity_linker = EntityLinker()
+        print("QuestionParser initialized")
 
     def parse(self, sentence):
+        sentence = contractions.fix(sentence)
         tokens = word_tokenize(sentence)
         sentence_with_pos = pos_tag(tokens)
         test = [sent2features(sentence_with_pos)]
@@ -48,26 +38,30 @@ class QuestionParser:
             if type(subtree) == Tree:
                 original_string = TreebankWordDetokenizer().detokenize([token for token, pos in subtree.leaves()])
                 original_string_clean = re.sub('[,;.\?]', '', original_string)
-                original_string_alt = re.sub(' ', '-', original_string_clean)
+                original_string_hyphen = re.sub(' ', '-', original_string_clean)
+                original_string_alt = original_string + '.'
                 original_label = subtree.label()
 
-                c_1 = [c.entity_ for c in self.kb.get_alias_candidates(original_string)]
-                c_2 = [c.entity_ for c in self.kb.get_alias_candidates(original_string_clean)]
-                c_3 = [c.entity_ for c in self.kb.get_alias_candidates(original_string_alt)]
-                candidates = c_1 + c_2 + c_3
+                # Disambiguation of entity type/label
+                label = self.entity_linker.disambiguation(original_string_clean, original_label)
+                if re.search(f"(movie|film) {original_string}|{original_string} (movie|film)", sentence) and (label == 'CHARACTER' or label == 'DIRECTOR'):
+                    label = 'TITLE'
+                elif re.search(f"character {original_string}|{original_string} character", sentence) and (label == 'TITLE' or label == 'DIRECTOR'):
+                    label = 'CHARACTER'
 
-                if len(candidates) == 0 and original_label == 'GENRE' and not re.search("movie|film", original_string_clean):
+                c_1 = self.entity_linker.get_candidates(original_string, label)
+                c_2 = self.entity_linker.get_candidates(original_string_clean, label)
+                c_3 = self.entity_linker.get_candidates(original_string_hyphen, label)
+                c_4 = self.entity_linker.get_candidates(original_string_alt, label)
+                c = c_1 + c_2 + c_3 + c_4
+                # remove duplicates
+                candidates = list(set(c))
+
+                if len(candidates) == 0 and label == 'GENRE' and not re.search("movie|film", original_string_clean):
                     original_string_clean += ' film'
-                    candidates = [c.entity_ for c in self.kb.get_alias_candidates(original_string_clean)]
+                    candidates = self.entity_linker.get_candidates(original_string_clean, label)
 
-                # TODO: Disambiguous method should be based on whether we can find the name in the categories of entities!
-                if re.search(f"(movie|film) {original_string}|{original_string} (movie|film)", sentence) and (original_label == 'CHARACTER' or original_label == 'DIRECTOR'):
-                    original_label = 'TITLE'
-                elif re.search(f"character {original_string}|{original_string} character", sentence) and (original_label == 'TITLE' or original_label == 'DIRECTOR'):
-                    original_label = 'CHARACTER'
-
-                entities.append((original_string, original_label, candidates))
-        # print([(s, l) for s, l, c in entities])
+                entities.append((original_string, label, candidates))
         # print(entities)
         return entities
 

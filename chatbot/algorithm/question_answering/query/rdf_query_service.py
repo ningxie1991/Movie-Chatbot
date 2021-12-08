@@ -1,3 +1,5 @@
+import re
+import time
 import pandas as pd
 from rdflib import Namespace, URIRef
 from chatbot.algorithm.predicate_linker import PredicateLinker
@@ -7,8 +9,10 @@ class RDFQueryService:
     def __init__(self, graph):
         self.graph = graph
         self.predicate_linker = PredicateLinker()
-        self.WD = Namespace('http://www.wikidata.org/entity/')
-        self.WDT = Namespace('http://www.wikidata.org/prop/direct/')
+        self.WD_uri = 'http://www.wikidata.org/entity/'
+        self.WD = Namespace(self.WD_uri)
+        self.WDT_uri = 'http://www.wikidata.org/prop/direct/'
+        self.WDT = Namespace(self.WDT_uri)
         self.RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
         self.entity_predicate_map = {
             'TITLE': [self.WDT.P161, self.WDT.P1441],
@@ -17,15 +21,34 @@ class RDFQueryService:
             'ACTOR': [self.WDT.P161, self.WDT.P175],
             'GENRE': [self.WDT.P136]
         }
-        self.columns = ['Entity', 'EntityLabel', 'Target', 'TargetLabel', "Date"]
-        print("loaded RDFQueryService")
+        self.columns = ['Subject', 'SubjectLabel', 'Relation', 'RelationLabel', 'Object', 'ObjectLabel', 'Date']
+        print("RDFQueryService initialized")
+
+    def format_subject(self, s):
+        s_uri = re.sub(self.WD_uri, "wd:", s.toPython())
+        s_label = self.graph.value(s, self.RDFS.label).toPython() if self.graph.value(s, self.RDFS.label) else s_uri
+        return s_uri, s_label
+
+    def format_predicate(self, p):
+        p_uri = re.sub(self.WDT_uri, "wdt:", p.toPython())
+        p_label = self.graph.value(p, self.RDFS.label).toPython() if self.graph.value(p, self.RDFS.label) else p_uri
+        return p_uri, p_label
+
+    def format_object(self, o):
+        if isinstance(o, URIRef):
+            o_uri = re.sub(self.WD_uri, "wd:", o.toPython())
+            o_label = self.graph.value(o, self.RDFS.label).toPython() if self.graph.value(o, self.RDFS.label) else o_uri
+        else:
+            o_uri = o.toPython()
+            o_label = o.toPython()
+        return str(o_uri), str(o_label)
 
     def query_wh(self, entities, relation):
         graph = self.graph
         entity = entities[0]
         entity_candidates = [self.WD[e] for e in entity[2]]
         matched_pred = self.predicate_linker.top_match(relation)[0]
-        print(f"relation: {relation}, matched_pred: {matched_pred}")
+        # print(f"relation: {relation}, matched_pred: {matched_pred}")
 
         targets = []
         predicate = URIRef(matched_pred[0])
@@ -33,11 +56,13 @@ class RDFQueryService:
             outbound = [(s, p, o) for s, p, o in graph.triples((e, predicate, None))]
             inbound = [(s, p, o) for s, p, o in graph.triples((None, predicate, e))]
             for s, p, o in outbound + inbound:
-                if graph.value(s, self.RDFS.label) and graph.value(o, self.RDFS.label):
-                    targets.append((s.toPython()[len(self.WD):],
-                                    graph.value(s, self.RDFS.label).toPython(),
-                                    o.toPython()[len(self.WD):],
-                                    graph.value(o, self.RDFS.label).toPython(),
+                if graph.value(s, self.RDFS.label):
+                    s_uri, s_label = self.format_subject(s)
+                    p_uri, p_label = self.format_predicate(p)
+                    o_uri, o_label = self.format_object(o)
+                    targets.append((s_uri, s_label,
+                                    p_uri, p_label,
+                                    o_uri, o_label,
                                     graph.value(s, self.WDT.P577)))
 
         df = pd.DataFrame(targets, columns=self.columns)
@@ -57,23 +82,23 @@ class RDFQueryService:
                 outbound = [(s, p, o) for s, p, o in graph.triples((e1, None, e2))]
                 for s, p, o in outbound:
                     if graph.value(s, self.RDFS.label) and graph.value(p, self.RDFS.label) and graph.value(o, self.RDFS.label):
-                        targets.append((s.toPython()[len(self.WD):],
-                                        graph.value(s, self.RDFS.label).toPython(),
-                                        p.toPython()[len(self.WDT):],
-                                        graph.value(p, self.RDFS.label).toPython(),
-                                        o.toPython()[len(self.WD):],
-                                        graph.value(o, self.RDFS.label).toPython(),
+                        s_uri, s_label = self.format_subject(s)
+                        p_uri, p_label = self.format_predicate(p)
+                        o_uri, o_label = self.format_object(o)
+                        targets.append((s_uri, s_label,
+                                        p_uri, p_label,
+                                        o_uri, o_label,
                                         graph.value(s, self.WDT.P577)))
 
                 inbound = [(s, p, o) for s, p, o in graph.triples((e2, None, e1))]
                 for s, p, o in inbound:
                     if graph.value(s, self.RDFS.label) and graph.value(p, self.RDFS.label) and graph.value(o, self.RDFS.label):
-                        targets.append((o.toPython()[len(self.WD):],
-                                        graph.value(o, self.RDFS.label).toPython(),
-                                        p.toPython()[len(self.WDT):],
-                                        graph.value(p, self.RDFS.label).toPython(),
-                                        s.toPython()[len(self.WD):],
-                                        graph.value(s, self.RDFS.label).toPython(),
+                        s_uri, s_label = self.format_subject(s)
+                        p_uri, p_label = self.format_predicate(p)
+                        o_uri, o_label = self.format_object(o)
+                        targets.append((o_uri, o_label,
+                                        p_uri, p_label,
+                                        s_uri, s_label,
                                         graph.value(s, self.WDT.P577)))
 
         df = pd.DataFrame(targets, columns=['Subject', 'SubjectLabel', 'Relation', 'RelationLabel', 'Object', 'ObjectLabel', 'Date'])
@@ -87,11 +112,22 @@ class RDFQueryService:
             entity = entities[0]
             entity_type = entity[1]
             entity_candidates = [self.WD[e] for e in entity[2]]
-            for s in [s for e1 in entity_candidates for pred in self.entity_predicate_map[entity_type] for s in graph.subjects(pred, e1)]:
-                if graph.value(s, self.RDFS.label):
-                    targets.append((s.toPython()[len(self.WD):],
-                                    graph.value(s, self.RDFS.label).toPython(),
-                                    graph.value(s, self.WDT.P577)))
+            if entity_type == 'GENRE':
+                start_time = time.time()
+                genre_candidates = [s for e in entity_candidates for s, p, o in
+                                    graph.triples((e, self.WDT.P31, self.WD.Q201658))]
+                for s in [s for e1 in genre_candidates[:5] for pred in self.entity_predicate_map[entity_type] for s in graph.subjects(pred, e1)]:
+                    if graph.value(s, self.RDFS.label):
+                        s_uri, s_label = self.format_subject(s)
+                        targets.append((s_uri, s_label,
+                                        graph.value(s, self.WDT.P577)))
+                print("---Took %s seconds to get all nodes---" % (time.time() - start_time))
+            else:
+                for s in [s for e1 in entity_candidates for pred in self.entity_predicate_map[entity_type] for s in graph.subjects(pred, e1)]:
+                    if graph.value(s, self.RDFS.label):
+                        s_uri, s_label = self.format_subject(s)
+                        targets.append((s_uri, s_label,
+                                        graph.value(s, self.WDT.P577)))
 
         else:
             entity1 = entities[0]
@@ -104,8 +140,8 @@ class RDFQueryService:
             for node, pred, e2 in [(node, pred, e2) for node in nodes for pred in self.entity_predicate_map[entity2_type] for e2 in entity2_candidates]:
                 for s, p, o in graph.triples((node, pred, e2)):
                     if graph.value(s, self.RDFS.label):
-                        targets.append((s.toPython()[len(self.WD):],
-                                        graph.value(s, self.RDFS.label).toPython(),
+                        s_uri, s_label = self.format_subject(s)
+                        targets.append((s_uri, s_label,
                                         graph.value(s, self.WDT.P577)))
 
         df = pd.DataFrame(targets, columns=['Target', 'TargetLabel', "Date"])

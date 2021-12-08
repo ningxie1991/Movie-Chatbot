@@ -1,16 +1,17 @@
 import os
 import re
-
 import numpy as np
 import pandas as pd
-from rdflib import URIRef, Namespace
+from datetime import datetime
 from sentence_transformers import SentenceTransformer
-
+from nltk.metrics import agreement
 from chatbot.data.dataset import Dataset
 from chatbot.data.utils import read_data, expand_property_labels, get_movies, \
-    get_directors, get_actors, get_characters, get_genres, convert_images_json
+    get_directors, get_actors, get_characters, get_genres, get_entities
+
 
 dirname = os.path.dirname(__file__)
+
 
 def process_mit_movies_data():
     train = read_data(os.path.join(dirname, '../../../data/mit_movies_corpus/engtrain.bio'))
@@ -33,8 +34,7 @@ def map_wikidata_properties(graph_dir):
             ?s ?p ?o
             FILTER( STRSTARTS(str(?p), str(ns1:)) )
         }
-        '''
-                                   )
+        ''')
 
     # pre-saved all the properties and their labels from wikidata
     wikidata_properties = pd.read_csv('../../data/wikidata/properties.csv')
@@ -42,8 +42,12 @@ def map_wikidata_properties(graph_dir):
     df.to_csv("../../data/wikidata/graph_properties_expanded.csv", index=False)
 
 
-def movie_entities(graph):
+def save_entities(graph):
+    df = get_entities(graph)
+    df.to_csv("../../data/ddis/graph_entities.csv", index=False)
 
+
+def movie_entities(graph):
     df = get_movies(graph)
     df.to_csv("../../data/ddis/movie_entities.csv", index=False)
 
@@ -68,32 +72,42 @@ def genre_entities(graph):
     df.to_csv("../../data/ddis/genre_entities.csv", index=False)
 
 
-def save_property_embeds(properties_dir, embeds_dir):
-    model = SentenceTransformer('sentence-transformers/paraphrase-xlm-r-multilingual-v1')
-    properties = pd.read_csv(properties_dir)
+def save_property_embeds():
+    model = SentenceTransformer('C:/Users/ningx/dev/GitHub/paraphrase-xlm-r-multilingual-v1')
+    properties = pd.read_csv(os.path.join(dirname, '../../data/wikidata/graph_properties_expanded.csv'))
     property_labels = properties['PropertyLabel']
     property_embeds = model.encode(property_labels)
-    np.save(embeds_dir, property_embeds)
+    np.save(os.path.join(dirname, '../../data/wikidata/property_embeds.npy'), property_embeds)
 
 
 def save_entity_embeds(entities_dir, embeds_dir):
-    model = SentenceTransformer('sentence-transformers/paraphrase-xlm-r-multilingual-v1')
+    model = SentenceTransformer('C:/Users/ningx/dev/GitHub/paraphrase-xlm-r-multilingual-v1')
     entities = pd.read_csv(entities_dir)
     entity_labels = entities['Label']
     entity_embeds = model.encode(entity_labels)
     np.save(embeds_dir, entity_embeds)
 
 
-def save_embeds(graph, query, embeds_dir):
-    model = SentenceTransformer('sentence-transformers/paraphrase-xlm-r-multilingual-v1')
-    labels = []
-    for row in graph.query(query):
-        labels.append(row['lbl'].toPython())
-    df = pd.DataFrame(labels, columns=['Label'])
-    df['Label']
-    movie_embeds = model.encode(df['Label'])
-    np.save(embeds_dir, movie_embeds)
+def save_agreement():
+    crowd_data = pd.read_csv(os.path.join(dirname, '../../data/ddis/filtered_crowd_data.csv'))
+    batches = crowd_data.groupby('HITTypeId')
+    for batchId, batch in batches:
+        data = []
+        grouped = batch.groupby('HITId')
+        for hitId, group in grouped:
+            index = 0
+            for idx, row in group.iterrows():
+                index += 1
+                data.append((f"Worker_{index}", str(hitId), row['AnswerID']))
+        task = agreement.AnnotationTask(data=data)
+        print("Fleiss Kappa:", task.multi_kappa())
+
+
+def convert_dates_to_ISO():
+    df = pd.read_csv(os.path.join(dirname, '../../data/ddis/filtered_crowd_data.csv'))
+    df['Input3ID'] = df['Input3ID'].apply(lambda x: datetime.strptime(x, "%m/%d/%Y").date() if re.search(r'(\d+/\d+/\d+)', x) else x)
+    df.to_csv("../../data/ddis/filtered_crowd_data_ISO_dates.csv", index=False)
 
 
 if __name__ == "__main__":
-    convert_images_json()
+    save_property_embeds()

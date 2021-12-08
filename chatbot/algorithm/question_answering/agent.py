@@ -1,5 +1,5 @@
 import re
-
+from chatbot.algorithm.question_answering.service.crowdsource import CrowdSource
 from chatbot.data.dataset import Dataset
 from chatbot.algorithm.question_answering.answer.formatter import format_entity, format_relation, format_image
 from chatbot.algorithm.question_answering.query.rdf_query_service import RDFQueryService
@@ -18,9 +18,8 @@ class Agent:
         self.rdf_query_service = RDFQueryService(dataset.graph)
         self.recommender_service = RecommenderService(dataset.graph)
         self.image_service = ImageService(dataset.graph)
-        self.verb_pos = ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
-        self.wh_pos = ['WDT', 'WP', 'WP$', 'WRB']
-        print("loaded Agent")
+        self.crowd_source = CrowdSource()
+        print("Agent initialized")
 
     def answer(self, question):
         entities = self.question_parser.parse(question)
@@ -43,16 +42,20 @@ class Agent:
                     else:
                         if len(results) == 1 or re.search(main_actor_character_pattern, relation):
                             result = results.iloc[0]
-                            formatted_label = format_entity(result['Target'], result['TargetLabel'])
-                            # response = f"{relation.capitalize()}{subject} is {formatted_label}."
+                            formatted_label = format_entity(result['Object'], result['ObjectLabel'])
                             response = formatted_label
+                            crowd_answer = self.crowd_source.find_answer(result['Subject'], result['Relation'], result['Object'])
+                            if crowd_answer:
+                                response += f" - according to the crowd, who had an inter-rater agreement of x in this batch; " \
+                                            f"the answer distribution for this task was {crowd_answer[0]} support vote(s) and {crowd_answer[1]} reject vote(s). "
                         else:
                             topK = results[:3]
                             relation_wo_article = re.sub(r'^the ', '', relation)
                             # response = f"There are a few {relation_wo_article}s{subject}, for example, "
                             response = f"There are a few results, for example, "
                             for index, row in topK.iterrows():
-                                formatted_label = format_entity(row['Target'], row['TargetLabel'])
+                                crowd_answer = self.crowd_source.find_answer(row['Subject'], row['Relation'], row['Object'])
+                                formatted_label = format_entity(row['Object'], row['ObjectLabel'])
                                 if topK.shape[0] == 1:
                                     response += f"{formatted_label}."
                                 elif index == topK.shape[0] - 1:
@@ -86,15 +89,17 @@ class Agent:
             elif is_action_question(question):
                 try:
                     relation = get_relation(question, first_entity[0])
-                    if is_recommender_question(relation) or is_image_question(relation):
-                        results = self.non_query_answer(entities, relation)
+                    if is_recommender_question(relation):
+                        results = self.recommender_service.top_match(entities)
+                    elif is_image_question(relation, question):
+                        results = self.image_service.top_match(entities, relation)
                     else:
                         results = self.rdf_query_service.query_action(entities)
 
                     if results.empty:
                         response = f"Sorry, I can't find it."
                     else:
-                        if is_image_question(relation):
+                        if is_image_question(relation, question):
                             result = results.iloc[0]
                             formatted_subject = format_entity(result['Entity'], result['EntityLabel'])
                             formatted_img = format_image(result['Target'])
@@ -118,11 +123,3 @@ class Agent:
             else:
                 response = f"Sorry, I don't know the answer."
         return response
-
-    def non_query_answer(self, entities, relation):
-        if is_recommender_question(relation):
-            return self.recommender_service.top_match(entities, relation)
-        elif is_image_question(relation):
-            return self.image_service.top_match(entities, relation)
-        else:
-            return None

@@ -8,14 +8,14 @@ from sklearn.metrics import pairwise_distances
 
 class PredicateLinker:
     def __init__(self):
-        self.model = SentenceTransformer('sentence-transformers/paraphrase-xlm-r-multilingual-v1')
+        self.model = SentenceTransformer('C:/Users/ningx/dev/GitHub/paraphrase-xlm-r-multilingual-v1')
         # properties_dir = ../../../data/wikidata/graph_properties_expanded.csv
         # embeds_dir = ../../..//data/wikidata/property_embeds.npy
         dirname = os.path.dirname(__file__)
         self.properties = pd.read_csv(os.path.join(dirname, '../../data/wikidata/graph_properties_expanded.csv'))
         self.property_labels = self.properties['PropertyLabel']
         self.property_embeds = np.load(os.path.join(dirname, '../../data/wikidata/property_embeds.npy'))
-        print("loaded PredicateLinker")
+        print("PredicateLinker initialized")
 
     def top_match(self, relation):
         relation_embed = self.model.encode(relation)

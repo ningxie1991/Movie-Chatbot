@@ -1,7 +1,7 @@
 import json
 import os
 import re
-
+import time
 import pandas as pd
 from rdflib import Namespace
 
@@ -9,7 +9,8 @@ from rdflib import Namespace
 class ImageService:
     def __init__(self, graph):
         self.graph = graph
-        self.WD = Namespace('http://www.wikidata.org/entity/')
+        self.WD_uri = 'http://www.wikidata.org/entity/'
+        self.WD = Namespace(self.WD_uri)
         self.WDT = Namespace('http://www.wikidata.org/prop/direct/')
         self.RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
 
@@ -21,9 +22,9 @@ class ImageService:
             'DIRECTOR': [self.WD.Q2526255, self.WD.Q3455803],
             'CHARACTER': [self.WD.Q95074, self.WD.Q15773347, self.WD.Q15632617],
             'ACTOR': [self.WD.Q33999, self.WD.Q10800557],
-            'GENRE': [self.WD.Q483394]
+            'GENRE': [self.WD.Q201658]  # film genre Q201658
         }
-        print("loaded ImageService")
+        print("ImageService initialized")
 
     def top_match(self, entities, relation):
         graph = self.graph
@@ -40,10 +41,15 @@ class ImageService:
                      graph.value(s, self.WDT.P345) and graph.value(s, self.WDT.P345).toPython() in self.images_map]
 
         elif entity_type == 'GENRE':
+            start_time = time.time()
+            genre_candidates = [s for e in entity_candidates for s, p, o in
+                                graph.triples((e, self.WDT.P31, self.WD.Q201658))]
+
             nodes = [(s, graph.value(s, self.WDT.P577), graph.value(s, self.WDT.P345).toPython()) for e in
-                     entity_candidates for s in graph.subjects(self.WDT.P136, e)
+                     genre_candidates[:5] for s in graph.subjects(self.WDT.P136, e)
                      if graph.value(s, self.RDFS.label) and graph.value(s, self.WDT.P577) and
                      graph.value(s, self.WDT.P345) and graph.value(s, self.WDT.P345).toPython() in self.images_map]
+            # print("---Took %s seconds to get all nodes---" % (time.time() - start_time))
 
         elif entity_type == 'ACTOR':
             nodes = [(o, graph.value(s, self.WDT.P577), graph.value(o, self.WDT.P345).toPython()) for e in
@@ -52,6 +58,7 @@ class ImageService:
                      graph.value(o, self.WDT.P345) and graph.value(o, self.WDT.P345).toPython() in self.images_map]
 
         nodes = sorted(nodes, key=lambda tup: tup[1], reverse=True)
+        start_time = time.time()
         if len(nodes) > 0:
             first_node = nodes[0]
             item_found = self.images_map[first_node[2]][0]
@@ -74,10 +81,15 @@ class ImageService:
                         break
 
                 if item_found:
-                    targets.append((s.toPython()[len(self.WD):],
-                                    graph.value(s, self.RDFS.label),
-                                    item_found["img"].rstrip('.jpg')))
+                    s_uri, s_label = self.format_subject(s)
+                    targets.append((s_uri, s_label, item_found["img"].rstrip('.jpg')))
                     break
+        # print("---Took %s seconds to find an image---" % (time.time() - start_time))
         df = pd.DataFrame(targets, columns=['Entity', 'EntityLabel', 'Target'])
         df = df.drop_duplicates().reset_index(drop=True)
         return df
+
+    def format_subject(self, s):
+        s_uri = re.sub(self.WD_uri, "wd:", s.toPython())
+        s_label = self.graph.value(s, self.RDFS.label).toPython() if self.graph.value(s, self.RDFS.label) else s_uri
+        return s_uri, s_label
