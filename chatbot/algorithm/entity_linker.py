@@ -15,29 +15,23 @@ class EntityLinker:
         print("EntityLinker initialized")
 
     def disambiguation(self, entity_string, original_label):
-        if self.genres['EntityLabel'].str.contains(entity_string, regex=False).any():
+        if self.genres['EntityLabel'].str.lower().str.contains(entity_string.lower(), regex=False).any():
             return "GENRE"
-        elif self.movies['EntityLabel'].str.contains(entity_string, regex=False).any():
+        elif self.movies['EntityLabel'].str.lower().str.contains(entity_string.lower(), regex=False).any():
             return "TITLE"
-        elif self.characters['EntityLabel'].str.contains(entity_string, regex=False).any():
+        elif self.characters['EntityLabel'].str.lower().str.contains(entity_string.lower(), regex=False).any():
             return "CHARACTER"
-        elif self.directors['EntityLabel'].str.contains(entity_string, regex=False).any():
-            return "DIRECTOR"
-        elif self.actors['EntityLabel'].str.contains(entity_string, regex=False).any():
-            return "ACTOR"
+        elif self.actors['EntityLabel'].str.lower().str.contains(entity_string.lower(), regex=False).any():
+            return "ACTOR" if original_label != "DIRECTOR" else original_label
+        elif self.directors['EntityLabel'].str.lower().str.contains(entity_string.lower(), regex=False).any():
+            return "DIRECTOR" if original_label != "ACTOR" else original_label
         else:
             return original_label
 
-    def get_candidates(self, entity_string, label):
-        if label == "GENRE":
-            return self.genres.loc[self.genres['EntityLabel'].str.contains(entity_string, regex=False), 'Entity'].drop_duplicates().tolist()
-        elif label == "TITLE":
-            return self.movies.loc[self.movies['EntityLabel'].str.contains(entity_string, regex=False), 'Entity'].drop_duplicates().tolist()
-        elif label == "CHARACTER":
-            return self.characters.loc[self.characters['EntityLabel'].str.contains(entity_string, regex=False), 'Entity'].drop_duplicates().tolist()
-        elif label == "DIRECTOR":
-            return self.directors.loc[self.directors['EntityLabel'].str.contains(entity_string, regex=False), 'Entity'].drop_duplicates().tolist()
-        elif label == "ACTOR":
-            return self.actors.loc[self.actors['EntityLabel'].str.contains(entity_string, regex=False), 'Entity'].drop_duplicates().tolist()
-        else:
-            return self.graph_entities.loc[self.graph_entities['EntityLabel'].str.contains(entity_string, regex=False), 'Entity'].drop_duplicates().tolist()
+    def get_candidates(self, entity_string):
+        primary_candidates = self.graph_entities.loc[self.graph_entities['EntityLabel'].str.lower() == entity_string.lower(), 'Entity'].drop_duplicates().tolist()
+        secondary_candidates = self.graph_entities.loc[self.graph_entities['EntityLabel'].str.lower().str.contains(entity_string.lower(), regex=False), 'Entity'].drop_duplicates().tolist()
+        return primary_candidates, secondary_candidates
+
+
+

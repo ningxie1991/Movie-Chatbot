@@ -5,6 +5,9 @@ import requests
 import time
 import threading
 import queue
+
+from requests import RequestException
+
 from chatbot.algorithm.question_answering.agent import Agent
 
 
@@ -47,8 +50,16 @@ class App:
 
     # post a message to a chat room
     def post_message(self, room_id: str, session_token: str, message: str):
-        return requests.post(url=self.url + "/api/room/{}".format(room_id),
+        for _ in range(5):
+            try:
+                response = requests.post(url=self.url + "/api/room/{}".format(room_id),
                              params={"roomId": room_id, "session": session_token}, data=message.encode('utf-8'))
+                return response
+            except RequestException:
+                print('Failed.... I am trying to recover')
+                pass
+        else:
+            raise Exception('Recovering failed.')
 
     def start_chat(self):
         chatroom_messages = {}
@@ -70,7 +81,7 @@ class App:
                         chatroom_messages[room_id] = []
 
                     if len(new_messages) == 0:
-                        response = 'Hello! What would you like to know about movies?'
+                        response = 'Hello! What would you like to know about movies? (I understand better if you type if you proper case movie titles and person names :))'
                         self.post_message(room_id=room_id, session_token=self.agent_details["sessionToken"],
                                           message=response)
 

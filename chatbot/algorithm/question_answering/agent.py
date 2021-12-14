@@ -4,11 +4,8 @@ from chatbot.data.dataset import Dataset
 from chatbot.algorithm.question_answering.answer.formatter import format_entity, format_relation, format_image
 from chatbot.algorithm.question_answering.query.rdf_query_service import RDFQueryService
 from chatbot.algorithm.question_answering.question.parser import QuestionParser
-from chatbot.algorithm.question_answering.question.patterns import is_wh_question, get_relation, \
-    main_actor_character_pattern, is_yesno_question, is_action_question, is_recommender_question, \
-    is_image_question
 from chatbot.algorithm.question_answering.service.image import ImageService
-from chatbot.algorithm.question_answering.service.recommender import RecommenderService
+from chatbot.algorithm.question_answering.service.embedding import EmbeddingService
 
 
 class Agent:
@@ -16,37 +13,33 @@ class Agent:
         dataset = Dataset()
         self.question_parser = QuestionParser()
         self.rdf_query_service = RDFQueryService(dataset.graph)
-        self.recommender_service = RecommenderService(dataset.graph)
+        self.embedding_service = EmbeddingService(dataset.graph)
         self.image_service = ImageService(dataset.graph)
         self.crowd_source = CrowdSource()
         print("Agent initialized")
 
     def answer(self, question):
-        entities = self.question_parser.parse(question)
+        question_type, entities, relation = self.question_parser.parse(question)
 
         if len(entities) == 0:
-            return "Sorry, I didn't understand your question. Could you please spell check and capitalize the first letters of movie titles and names?"
+            return "Sorry, I didn't understand your question. Could you please spell check and proper case movie titles and person names?"
 
         response = ''
         if len(entities) > 0:
-            first_entity = entities[0]
-            entity_label = re.sub('[,;\?]', '', first_entity[0])
-            subject = f" of {entity_label}"
-
-            if is_wh_question(question, first_entity[0]):
+            if question_type == "wh":
                 try:
-                    relation = get_relation(question, first_entity[0])
                     results = self.rdf_query_service.query_wh(entities, relation)
                     if results.empty:
                         response = f"Sorry, I don't know the answer."
                     else:
-                        if len(results) == 1 or re.search(main_actor_character_pattern, relation):
+                        if len(results) == 1 or re.search(r"main|lead|leading|only|best|top", relation):
                             result = results.iloc[0]
-                            formatted_label = format_entity(result['Object'], result['ObjectLabel'])
+                            obj, obj_label = self.embedding_service.validate_answer(result['Subject'], result['Relation'], result['Object'], result['ObjectLabel'])
+                            formatted_label = format_entity(obj, obj_label)
                             response = formatted_label
                             crowd_answer = self.crowd_source.find_answer(result['Subject'], result['Relation'], result['Object'])
                             if crowd_answer:
-                                response += f" - according to the crowd, who had an inter-rater agreement of x in this batch; " \
+                                response += f" - according to the crowd, who had an inter-rater agreement of {crowd_answer[2]} in this batch; " \
                                             f"the answer distribution for this task was {crowd_answer[0]} support vote(s) and {crowd_answer[1]} reject vote(s). "
                         else:
                             topK = results[:3]
@@ -55,7 +48,11 @@ class Agent:
                             response = f"There are a few results, for example, "
                             for index, row in topK.iterrows():
                                 crowd_answer = self.crowd_source.find_answer(row['Subject'], row['Relation'], row['Object'])
-                                formatted_label = format_entity(row['Object'], row['ObjectLabel'])
+                                obj, obj_label = self.embedding_service.validate_answer(row['Subject'],
+                                                                                        row['Relation'],
+                                                                                        row['Object'],
+                                                                                        row['ObjectLabel'])
+                                formatted_label = format_entity(obj, obj_label)
                                 if topK.shape[0] == 1:
                                     response += f"{formatted_label}."
                                 elif index == topK.shape[0] - 1:
@@ -65,7 +62,7 @@ class Agent:
                 except Exception as e:
                     response = f"Sorry, I don't know the answer."
                     print("Error:", e)
-            elif is_yesno_question(question):
+            elif question_type == "yesno":
                 try:
                     results = self.rdf_query_service.query_yesno(entities)
                     if results.empty:
@@ -86,12 +83,11 @@ class Agent:
                 except Exception as e:
                     response = f"Sorry, I don't know the answer."
                     print("Error:", e)
-            elif is_action_question(question):
+            elif question_type == "recommender" or question_type == "embedding" or question_type == "media":
                 try:
-                    relation = get_relation(question, first_entity[0])
-                    if is_recommender_question(relation):
-                        results = self.recommender_service.top_match(entities)
-                    elif is_image_question(relation, question):
+                    if question_type == "embedding":
+                        results = self.embedding_service.top_match(entities)
+                    elif question_type == "media":
                         results = self.image_service.top_match(entities, relation)
                     else:
                         results = self.rdf_query_service.query_action(entities)
@@ -99,14 +95,13 @@ class Agent:
                     if results.empty:
                         response = f"Sorry, I can't find it."
                     else:
-                        if is_image_question(relation, question):
+                        if question_type == "media":
                             result = results.iloc[0]
                             formatted_subject = format_entity(result['Entity'], result['EntityLabel'])
                             formatted_img = format_image(result['Target'])
                             response = f"{formatted_subject} {formatted_img}"
                         else:
                             topK = results[:3]
-                            relation_wo_article = re.sub(r'^the ', '', relation)
                             response = f"How about these:  "
                             for index, row in topK.iterrows():
                                 formatted_label = format_entity(row['Target'], row['TargetLabel'])

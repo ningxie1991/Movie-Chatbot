@@ -89,7 +89,7 @@ def save_entity_embeds(entities_dir, embeds_dir):
 
 
 def save_agreement():
-    crowd_data = pd.read_csv(os.path.join(dirname, '../../data/ddis/filtered_crowd_data.csv'))
+    crowd_data = pd.read_csv(os.path.join(dirname, '../../data/ddis/filtered_crowd_data_ISO_dates.csv'))
     batches = crowd_data.groupby('HITTypeId')
     for batchId, batch in batches:
         data = []
@@ -101,6 +101,8 @@ def save_agreement():
                 data.append((f"Worker_{index}", str(hitId), row['AnswerID']))
         task = agreement.AnnotationTask(data=data)
         print("Fleiss Kappa:", task.multi_kappa())
+        crowd_data.loc[crowd_data['HITTypeId'] == batchId, 'kappa'] = task.multi_kappa()
+    crowd_data.to_csv(os.path.join(dirname, '../../data/ddis/filtered_crowd_data_ISO_dates.csv'))
 
 
 def convert_dates_to_ISO():
@@ -110,4 +112,4 @@ def convert_dates_to_ISO():
 
 
 if __name__ == "__main__":
-    save_property_embeds()
+    save_agreement()

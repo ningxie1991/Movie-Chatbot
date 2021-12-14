@@ -20,7 +20,6 @@ if __name__ == "__main__":
 
 # questions = [
 #              "Who is the director of the Batman movie?",
-#              "Who's the director of the Batman movie?",
 #              'Did Christopher Nolan ever work on a Batman movie?',
 #              'What is the name of the lead actor in the movie Catch Me If You Can?',
 #              'I like the Jurassic Park movie; can you recommend any similar movies?',

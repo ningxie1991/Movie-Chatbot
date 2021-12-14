@@ -30,7 +30,7 @@ class ImageService:
         graph = self.graph
         entity = entities[0]
         entity_type = entity[1]
-        entity_candidates = [self.WD[e] for e in entity[2]]
+        entity_candidates = [self.WD[e] for e in entity[2]['primary'] + entity[2]['secondary']]
 
         targets = []
         if entity_type == 'TITLE':

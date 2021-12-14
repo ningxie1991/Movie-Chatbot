@@ -41,11 +41,12 @@ class CrowdSource:
 
     def find_answer(self, s, p, o):
         df = self.crowd_data
-        crowd_answers = df.loc[(df['Input1ID'] == s) & (df["Input2ID"] == p) & (df["Input3ID"] == o), "AnswerLabel"]
+        crowd_answers = df.loc[(df['Input1ID'] == s) & (df["Input2ID"] == p) & (df["Input3ID"] == o)]
         if crowd_answers.empty:
             return None
         else:
-            votes = crowd_answers.value_counts().to_frame('count').reset_index()
+            kappa = crowd_answers['Kappa'].iloc[0]
+            votes = crowd_answers['AnswerLabel'].value_counts().to_frame('count').reset_index()
             if votes.loc[votes['index'] == 'CORRECT', 'count'].values:
                 support_votes = votes.loc[votes['index'] == 'CORRECT', 'count'].values[0]
             else:
@@ -55,4 +56,4 @@ class CrowdSource:
                 reject_votes = votes.loc[votes['index'] == 'INCORRECT', 'count'].values[0]
             else:
                 reject_votes = 0
-            return support_votes, reject_votes
+            return support_votes, reject_votes, round(kappa, 2)
