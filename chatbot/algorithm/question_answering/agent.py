@@ -40,7 +40,7 @@ class Agent:
                             crowd_answer = self.crowd_source.find_answer(result['Subject'], result['Relation'], result['Object'])
                             if crowd_answer:
                                 response += f" - according to the crowd, who had an inter-rater agreement of {crowd_answer[2]} in this batch; " \
-                                            f"the answer distribution for this task was {crowd_answer[0]} support vote(s) and {crowd_answer[1]} reject vote(s). "
+                                            f"the answer distribution for this task was {crowd_answer[0]} support vote(s) and {crowd_answer[1]} reject vote(s)"
                         else:
                             topK = results[:3]
                             relation_wo_article = re.sub(r'^the ', '', relation)
@@ -53,6 +53,9 @@ class Agent:
                                                                                         row['Object'],
                                                                                         row['ObjectLabel'])
                                 formatted_label = format_entity(obj, obj_label)
+                                if crowd_answer:
+                                    formatted_label += f" - according to the crowd, who had an inter-rater agreement of {crowd_answer[2]} in this batch; " \
+                                                f"the answer distribution for this task was {crowd_answer[0]} support vote(s) and {crowd_answer[1]} reject vote(s)"
                                 if topK.shape[0] == 1:
                                     response += f"{formatted_label}."
                                 elif index == topK.shape[0] - 1:

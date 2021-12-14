@@ -81,7 +81,7 @@ class App:
                         chatroom_messages[room_id] = []
 
                     if len(new_messages) == 0:
-                        response = 'Hello! What would you like to know about movies? (I understand better if you type if you proper case movie titles and person names :))'
+                        response = 'Hello! What would you like to know about movies? (I understand better if you proper case movie titles and person names :))'
                         self.post_message(room_id=room_id, session_token=self.agent_details["sessionToken"],
                                           message=response)
 
