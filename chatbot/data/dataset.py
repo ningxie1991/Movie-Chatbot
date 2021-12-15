@@ -10,6 +10,7 @@ class Dataset:
         dirname = os.path.dirname(__file__)
         with open(os.path.join(dirname, '../../data/ddis/graph.pkl'), 'rb') as file:
             self.graph = pickle.load(file)
+
         # self.graph = rdflib.Graph()
         # self.graph.parse(os.path.join(dirname, '../../data/ddis/14_graph.nt'), format='turtle')
         # crowd_source = CrowdSource()

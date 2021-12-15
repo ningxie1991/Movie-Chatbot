@@ -10,11 +10,13 @@ class QuestionPattern:
 
         self.wh_ner_A = self.wh + r"(?:is |are |was |were |does |do |did )?(.*)(?: in| of| from| for)(?: the| a)?(?: movie| film |character)?"
         self.wh_ner_B_2 = self.wh + r"(?:movie |movies |film |films )?(?:is |are |was |were |does |do |did )?(.*) (.*)"
+        self.wh_ner_C = r"(?:.*)(?:Tell|tell)(?: me)?(?: about)?(.*)(?:of|in|from|for)"
 
         self.wh_A = self.wh + r"(?:is |are |was |were )?(.*)(?: in| of| from| for)(?: the| a)?(.*)(?: movie| film |character)([\w\s]*)"
         self.wh_B = self.wh + r"(?:is |are |was |were )?(.*)(?: in| of| from| for)(?: the| a)?(.*)"
         self.wh_C = self.wh + r"(?:movie |movies |film |films )?(?:is |are |was |were |did )?(.*)(?:by)(.*)"
         self.wh_D = self.wh + r"(?:movie |movies |film |films )?(?:is |are |was |were |did )?(.*) (.*)"
+        self.wh_E = r"(?:.*)(?:Tell|tell)(?: me)?(?: about)?(.*)(?:of|in|from|for)(.*)"
 
         self.wh_type = r"(?:What |what |What's |what's )(?:is |are |was |were )?" \
                           r"(?:a |an |the |the type of |the parent type of |the parent of |the class of |the parent class of )?(.*)"
@@ -57,10 +59,12 @@ class QuestionPattern:
 
     def is_wh_question(self, question, is_ner=True, entity=None):
         if is_ner:
-            return re.match(self.wh_ner_A, question) or re.match(self.wh_ner_B(entity), question) or re.match(self.wh_type, question)
+            return re.match(self.wh_ner_A, question) or re.match(self.wh_ner_B(entity), question) \
+                   or re.match(self.wh_type, question) or re.match(self.wh_ner_C, question)
         else:
             return re.match(self.wh_A, question) or re.match(self.wh_B, question) \
-                   or re.match(self.wh_C, question) or re.match(self.wh_type, question)
+                   or re.match(self.wh_C, question) or re.match(self.wh_type, question) \
+                   or re.match(self.wh_E, question)
 
     def is_yesno_question(self, question):
         return re.match(self.yesno_pattern, question)

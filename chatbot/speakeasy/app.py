@@ -9,6 +9,7 @@ import queue
 from requests import RequestException
 
 from chatbot.algorithm.question_answering.agent import Agent
+logging.basicConfig(filename='speakeasy.log', encoding='utf-8', level=logging.DEBUG)
 
 
 class App:
@@ -56,7 +57,7 @@ class App:
                              params={"roomId": room_id, "session": session_token}, data=message.encode('utf-8'))
                 return response
             except RequestException:
-                print('Failed.... I am trying to recover')
+                logging.info('Failed.... I am trying to recover')
                 pass
         else:
             raise Exception('Recovering failed.')
@@ -108,10 +109,10 @@ class App:
         # 4. match the query pattern from bos and generate the query
         # 5. perform SPARQL query to find the answer
         # 6. formulate the answer as a response
-        logging.info("Thread %s: starting", question)
+        logging.info("New thread: %s", question)
         response = self.qa_agent.answer(question)
         q.put(response)
-        logging.info("Thread %s: finishing", question)
+        logging.info("Response: %s", response)
         # return response
 
     def start_thread(self, question):

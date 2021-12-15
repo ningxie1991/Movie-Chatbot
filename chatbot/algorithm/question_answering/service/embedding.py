@@ -48,7 +48,7 @@ class EmbeddingService:
             'ACTOR': self.WDT.P106,
             'GENRE': self.WDT.P31
         }
-        print("RecommenderService initialized")
+        print("EmbeddingService initialized")
 
     def top_match(self, entities):
         entity = entities[0]
