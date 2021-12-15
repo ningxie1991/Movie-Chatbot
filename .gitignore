@@ -130,3 +130,8 @@ dmypy.json
 
 # idea
 .idea/
+
+data/
+chatbot/algorithm/spacy_ner/
+chatbot/algorithm/saved_models/spacy_nlp
+chatbot/algorithm/saved_models/spacy_kb

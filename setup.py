@@ -7,7 +7,7 @@ with open('LICENSE') as f:
     license = f.read()
 
 setup(
-    name='speakeasy',
+    name='chatbot',
     version='0.1.0',
     description='ATAI Class Project at UZH',
     author='Ning Xie',

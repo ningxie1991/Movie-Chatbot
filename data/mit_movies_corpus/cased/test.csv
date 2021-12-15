@@ -1,0 +1,11 @@
+Sentence #,Word,POS,Tag
+Sentence: 7174,Was,VBD,O
+Sentence: 7174,Cate,NNP,B-ACTOR
+Sentence: 7174,Blanchett,NNP,I-ACTOR
+Sentence: 7174,ever,RB,O
+Sentence: 7174,in,IN,O
+Sentence: 7174,any,DT,O
+Sentence: 7174,r,RB,B-RATING
+Sentence: 7174,rated,VBN,O
+Sentence: 7174,Blanchett,JJ,B-GENRE
+Sentence: 7174,movies,NNS,O
